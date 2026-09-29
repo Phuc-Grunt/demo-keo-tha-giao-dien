@@ -62,6 +62,7 @@ export async function getPublishedPage(): Promise<BuilderDocument | null> {
     .select("published_content")
     .eq("slug", "home")
     .maybeSingle();
+  console.log("🚀 ~ getPublishedPage ~ data:", data)
   if (error) throw new Error(error.message);
   return data?.published_content ? validatedDocument(data.published_content) : null;
 }
@@ -104,6 +105,7 @@ export async function getCategories(): Promise<Category[]> {
   const db = publicClient();
   if (!db) return [];
   const { data, error } = await db.from("categories").select("id,slug,name").order("name");
+  console.log("🚀 ~ getCategories ~ data:", data)
   if (error) throw new Error(error.message);
   return (data ?? []) as Category[];
 }
@@ -120,6 +122,7 @@ export async function getArticles(options: { categorySlug?: string; mode?: "late
   if (options.mode === "hot") query = query.eq("is_hot", true).order("view_count", { ascending: false });
   else query = query.order("published_at", { ascending: false });
   const { data, error } = await query;
+  console.log("🚀 ~ getArticles ~ data:", data)
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Article[];
 }
@@ -133,6 +136,7 @@ export async function getContentEntries(kind: ContentKind, limit = 4): Promise<C
     .eq("status", "published")
     .order("sort_order", { ascending: true })
     .limit(limit);
+  console.log("🚀 ~ getContentEntries ~ data:", data)
   if (error) throw new Error(error.message);
   return (data ?? []) as ContentEntry[];
 }
