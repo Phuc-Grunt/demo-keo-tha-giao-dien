@@ -189,14 +189,12 @@ export default function BuilderApp() {
 
   useEffect(() => {
     const existingLocalDraft = Boolean(localStorage.getItem("moet-visual-builder-demo-v1"));
-    const savedToken = sessionStorage.getItem("moet-demo-admin-token") ?? "";
+    sessionStorage.removeItem("moet-demo-admin-token");
     void Promise.resolve(useBuilderStore.persist.rehydrate()).then(() => {
-      setAdminToken(savedToken);
       setHydrated(true);
-      if (savedToken || !existingLocalDraft) {
+      if (!existingLocalDraft) {
         const initialDocument = useBuilderStore.getState().document;
-        void fetch(savedToken ? "/api/page?draft=1" : "/api/page", {
-            headers: savedToken ? { "x-demo-admin-token": savedToken } : {},
+        void fetch("/api/page", {
             cache: "no-store",
             signal: AbortSignal.timeout(6000),
           }).then(responseData).then((body) => {
@@ -234,12 +232,6 @@ export default function BuilderApp() {
     })).then((entries) => { if (!controller.signal.aborted) setDataByBlock(Object.fromEntries(entries)); });
     return () => controller.abort();
   }, [hydrated, blockSourceKey]);
-
-  function rememberToken(value: string) {
-    setAdminToken(value);
-    if (value) sessionStorage.setItem("moet-demo-admin-token", value);
-    else sessionStorage.removeItem("moet-demo-admin-token");
-  }
 
   async function loadFromDatabase() {
     if (!adminToken) return setMessage("Nhập mã quản trị để tải bản nháp từ Supabase.");
@@ -350,7 +342,7 @@ export default function BuilderApp() {
       <button className="mobile-inspector-toggle" onClick={() => setMobileInspectorOpen(true)}><Settings2 size={16} /> Thuộc tính</button>
 
       <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={importJson} />
-      <div className="bottom-tools"><button onClick={() => fileInput.current?.click()}><Upload size={15} /> Nhập JSON</button><span /> <button onClick={exportJson}><Download size={15} /> Xuất JSON</button><span /><button onClick={reset}><RotateCcw size={15} /> Khôi phục mẫu</button><div className="bottom-spacer" /><label htmlFor="admin-token">Mã quản trị</label><input id="admin-token" type="password" value={adminToken} onChange={(event) => rememberToken(event.target.value)} placeholder="Nhập mã quản trị" autoComplete="off" /><button onClick={() => void loadFromDatabase()} disabled={actionBusy}>Tải bản nháp từ DB</button></div>
+      <div className="bottom-tools"><button onClick={() => fileInput.current?.click()}><Upload size={15} /> Nhập JSON</button><span /> <button onClick={exportJson}><Download size={15} /> Xuất JSON</button><span /><button onClick={reset}><RotateCcw size={15} /> Khôi phục mẫu</button><div className="bottom-spacer" /><label htmlFor="admin-token">Mã quản trị</label><input id="admin-token" type="password" value={adminToken} onChange={(event) => setAdminToken(event.target.value)} placeholder="Nhập DEMO_ADMIN_TOKEN" autoComplete="off" /><button onClick={() => void loadFromDatabase()} disabled={actionBusy}>Tải bản nháp từ DB</button></div>
       {message && <div role="status" className="toast"><Check size={16} />{message}<button onClick={() => setMessage("")} aria-label="Đóng thông báo"><X size={15} /></button></div>}
 
       {preview && <div className="preview-modal" role="dialog" aria-modal="true" aria-label="Xem trước trang"><div className="preview-header"><div><span className="preview-mark"><Eye size={18} /></span><strong>Xem trước trang</strong><span className="preview-badge">BẢN NHÁP</span></div><button className="outline-button" onClick={() => setPreview(false)}><X size={16} /> Đóng xem trước</button></div><div className="preview-scroll">{previewPage}</div></div>}
