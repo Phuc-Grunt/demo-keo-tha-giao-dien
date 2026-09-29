@@ -327,7 +327,7 @@ export default function BuilderApp() {
         <div className="header-divider" />
         <button className="outline-button" onClick={() => setPreview(true)}><Eye size={16} /> Xem trước</button>
         <Link className="outline-button published-link" href="/site"><Eye size={16} /> Trang đã xuất bản</Link>
-        <button className="outline-button" onClick={() => void saveToDatabase(false)} disabled={actionBusy}>Lưu vào DB</button>
+        {/* <button className="outline-button" onClick={() => void saveToDatabase(false)} disabled={actionBusy}>Lưu vào DB</button> */}
         <button className="primary-button" onClick={() => void saveToDatabase(true)} disabled={actionBusy}>Xuất bản</button>
       </header>
 
