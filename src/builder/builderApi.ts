@@ -1,0 +1,90 @@
+import { documentSchema, getBlockSource, type BuilderBlock, type BuilderDocument } from "./model";
+import type { Article, Category, ContentEntry, ContentKind } from "@/lib/supabase";
+
+export type BlockData = { articles?: Article[]; entries?: ContentEntry[] };
+
+/** Đọc JSON và chuyển lỗi HTTP thành Error để giao diện hiển thị thông báo. */
+async function responseData<T>(response: Response): Promise<T> {
+  const body: unknown = await response.json();
+  if (!response.ok) {
+    const error = typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
+      ? body.error
+      : "Yêu cầu không thành công.";
+    throw new Error(error);
+  }
+  return body as T;
+}
+
+/** Kiểm tra bố cục từ API trước khi đưa vào store của trình biên tập. */
+function parseDocument(value: unknown, errorMessage: string): BuilderDocument {
+  const parsed = documentSchema.safeParse(value);
+  if (!parsed.success) throw new Error(errorMessage);
+  return parsed.data;
+}
+
+/** Đổi loại khối trên giao diện thành loại nội dung mà API chấp nhận. */
+function contentKindFor(block: BuilderBlock): ContentKind {
+  if (block.kind === "stats") return "stat";
+  if (block.kind === "links") return "link";
+  return block.kind as ContentKind;
+}
+
+/** Lấy trang đã xuất bản để khởi tạo trình biên tập khi chưa có bản cục bộ. */
+export async function getPublishedPage(signal?: AbortSignal): Promise<BuilderDocument> {
+  const body = await responseData<{ document: unknown }>(await fetch("/api/page", { cache: "no-store", signal }));
+  return parseDocument(body.document, "Trang đã xuất bản không hợp lệ.");
+}
+
+/** Lấy bản nháp từ DB bằng mã quản trị do người dùng nhập. */
+export async function getDraftPage(adminToken: string): Promise<BuilderDocument> {
+  const body = await responseData<{ document: unknown }>(await fetch("/api/page?draft=1", {
+    headers: { "x-demo-admin-token": adminToken },
+    cache: "no-store",
+  }));
+  return parseDocument(body.document, "Bản nháp trong Supabase không hợp lệ.");
+}
+
+/** Lấy danh sách chuyên mục cho bộ chọn nguồn tin và thông báo. */
+export async function getCategories(): Promise<Category[]> {
+  const body = await responseData<{ categories: Category[] }>(await fetch("/api/categories", { cache: "no-store" }));
+  return body.categories;
+}
+
+/** Lấy bài viết theo chuyên mục, cách sắp xếp và số lượng của một khối. */
+async function getArticles(block: BuilderBlock, signal: AbortSignal): Promise<Article[]> {
+  const source = getBlockSource(block);
+  const query = new URLSearchParams({ category: source.categorySlug, mode: source.mode, limit: String(source.limit) });
+  const body = await responseData<{ articles: Article[] }>(await fetch(`/api/articles?${query}`, { signal, cache: "no-store" }));
+  return body.articles;
+}
+
+/** Lấy nội dung từ bảng content_entries cho một khối không phải tin bài. */
+async function getContentEntries(block: BuilderBlock, signal: AbortSignal): Promise<ContentEntry[]> {
+  const source = getBlockSource(block);
+  const query = new URLSearchParams({ kind: contentKindFor(block), limit: String(source.limit) });
+  const body = await responseData<{ entries: ContentEntry[] }>(await fetch(`/api/content?${query}`, { signal, cache: "no-store" }));
+  return body.entries;
+}
+
+/** Chọn API dữ liệu phù hợp với loại khối và trả dữ liệu cho BlockRenderer. */
+export async function getBlockData(block: BuilderBlock, signal: AbortSignal): Promise<BlockData> {
+  if (block.kind === "news" || block.kind === "notice") return { articles: await getArticles(block, signal) };
+  return { entries: await getContentEntries(block, signal) };
+}
+
+/** Lưu bố cục hiện tại thành bản nháp trong DB sau khi API kiểm tra mã. */
+export async function saveDraft(document: BuilderDocument, adminToken: string): Promise<void> {
+  await responseData(await fetch("/api/page", {
+    method: "PUT",
+    headers: { "x-demo-admin-token": adminToken, "content-type": "application/json" },
+    body: JSON.stringify(document),
+  }));
+}
+
+/** Đưa bản nháp đã lưu lên trang công khai sau khi API kiểm tra mã. */
+export async function publishDraft(adminToken: string): Promise<void> {
+  await responseData(await fetch("/api/page/publish", {
+    method: "POST",
+    headers: { "x-demo-admin-token": adminToken, "content-type": "application/json" },
+  }));
+}

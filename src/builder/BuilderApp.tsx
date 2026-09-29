@@ -19,9 +19,9 @@ import { BlockRenderer } from "./BlockRenderer";
 import { PortalChrome } from "./PortalChrome";
 import { blockCatalog, blockKinds, BlockKind, BuilderBlock, documentSchema, getBlockSource } from "./model";
 import { useBuilderStore } from "./store";
-import type { Article, Category, ContentEntry, ContentKind } from "@/lib/supabase";
-
-type BlockData = { articles?: Article[]; entries?: ContentEntry[] };
+import * as builderApi from "./builderApi";
+import type { BlockData } from "./builderApi";
+import type { Category } from "@/lib/supabase";
 
 const paletteIcons = {
   hero: ImageIcon,
@@ -33,18 +33,7 @@ const paletteIcons = {
   gallery: ImageIcon,
 };
 
-function contentKindFor(kind: BlockKind): ContentKind {
-  if (kind === "stats") return "stat";
-  if (kind === "links") return "link";
-  return kind as ContentKind;
-}
-
-async function responseData(response: Response) {
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error || "Yêu cầu không thành công.");
-  return body;
-}
-
+/** Hiển thị một loại khối trong thư viện để thêm bằng nút hoặc kéo thả. */
 function PaletteItem({ kind }: { kind: BlockKind }) {
   const add = useBuilderStore((state) => state.add);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `palette:${kind}` });
@@ -61,6 +50,7 @@ function PaletteItem({ kind }: { kind: BlockKind }) {
   );
 }
 
+/** Hiển thị một khối cùng các thao tác chọn, sắp xếp, nhân bản và xóa. */
 function SortableBlock({ block, selected, index, total, onSelect, data }: { block: BuilderBlock; selected: boolean; index: number; total: number; onSelect: () => void; data?: BlockData }) {
   const select = useBuilderStore((state) => state.select);
   const remove = useBuilderStore((state) => state.remove);
@@ -88,6 +78,7 @@ function SortableBlock({ block, selected, index, total, onSelect, data }: { bloc
   );
 }
 
+/** Ghép các khối theo thứ tự hiện tại và tạo vùng thả cho canvas. */
 function EditorCanvas({ onSelect, dataByBlock }: { onSelect: () => void; dataByBlock: Record<string, BlockData> }) {
   const blocks = useBuilderStore((state) => state.document.blocks);
   const add = useBuilderStore((state) => state.add);
@@ -106,6 +97,7 @@ function EditorCanvas({ onSelect, dataByBlock }: { onSelect: () => void; dataByB
   );
 }
 
+/** Hiển thị thuộc tính trang hoặc khối đang chọn và cập nhật chúng trong store. */
 function Inspector({ mobileOpen, onClose, categories }: { mobileOpen: boolean; onClose: () => void; categories: Category[] }) {
   const selectedId = useBuilderStore((state) => state.selectedId);
   const block = useBuilderStore((state) => state.document.blocks.find((item) => item.id === selectedId));
@@ -164,6 +156,7 @@ function Inspector({ mobileOpen, onClose, categories }: { mobileOpen: boolean; o
   );
 }
 
+/** Điều phối trạng thái trình biên tập, dữ liệu API và các thao tác người dùng. */
 export default function BuilderApp() {
   const document = useBuilderStore((state) => state.document);
   const pastLength = useBuilderStore((state) => state.past.length);
@@ -187,6 +180,7 @@ export default function BuilderApp() {
   const fileInput = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
+  // Khôi phục bản nháp cục bộ; chỉ tải trang công khai khi trình duyệt chưa có bản nháp.
   useEffect(() => {
     const existingLocalDraft = Boolean(localStorage.getItem("moet-visual-builder-demo-v1"));
     sessionStorage.removeItem("moet-demo-admin-token");
@@ -194,75 +188,66 @@ export default function BuilderApp() {
       setHydrated(true);
       if (!existingLocalDraft) {
         const initialDocument = useBuilderStore.getState().document;
-        void fetch("/api/page", {
-            cache: "no-store",
-            signal: AbortSignal.timeout(6000),
-          }).then(responseData).then((body) => {
-          const parsed = documentSchema.safeParse(body.document);
-          if (parsed.success && useBuilderStore.getState().document === initialDocument) useBuilderStore.getState().load(parsed.data);
-        }).catch(() => { /* Keep the local draft until Supabase is ready. */ });
+        void builderApi.getPublishedPage(AbortSignal.timeout(6000)).then((page) => {
+          if (useBuilderStore.getState().document === initialDocument) useBuilderStore.getState().load(page);
+        }).catch(() => { /* Giữ bố cục cục bộ khi Supabase chưa sẵn sàng. */ });
       }
     });
   }, []);
 
+  // Tải chuyên mục sau khi store đã khôi phục để Inspector hiển thị lựa chọn nguồn tin.
   useEffect(() => {
     if (!hydrated) return;
-    void fetch("/api/categories", { cache: "no-store" }).then(responseData)
-      .then((body) => setCategories(body.categories as Category[]))
+    void builderApi.getCategories()
+      .then(setCategories)
       .catch(() => setCategories([]));
   }, [hydrated]);
 
+  // Theo dõi cấu hình nguồn thay vì toàn bộ nội dung để tránh gọi API khi chỉ sửa tiêu đề.
   const blockSourceKey = JSON.stringify(document.blocks.map((block) => [block.id, block.kind, getBlockSource(block)]));
+  // Tải lại dữ liệu từng khối khi loại khối hoặc cấu hình nguồn dữ liệu thay đổi.
   useEffect(() => {
     if (!hydrated) return;
     const controller = new AbortController();
     const blocks = useBuilderStore.getState().document.blocks;
     void Promise.all(blocks.map(async (block) => {
-      const source = getBlockSource(block);
       try {
-        if (block.kind === "news" || block.kind === "notice") {
-          const query = new URLSearchParams({ category: source.categorySlug, mode: source.mode, limit: String(source.limit) });
-          const result = await responseData(await fetch(`/api/articles?${query}`, { signal: controller.signal, cache: "no-store" }));
-          return [block.id, { articles: result.articles as Article[] }] as const;
-        }
-        const query = new URLSearchParams({ kind: contentKindFor(block.kind), limit: String(source.limit) });
-        const result = await responseData(await fetch(`/api/content?${query}`, { signal: controller.signal, cache: "no-store" }));
-        return [block.id, { entries: result.entries as ContentEntry[] }] as const;
+        return [block.id, await builderApi.getBlockData(block, controller.signal)] as const;
       } catch { return [block.id, {}] as const; }
     })).then((entries) => { if (!controller.signal.aborted) setDataByBlock(Object.fromEntries(entries)); });
     return () => controller.abort();
   }, [hydrated, blockSourceKey]);
 
+  /** Tải bản nháp DB khi người dùng nhập đúng mã và cập nhật tài liệu đang sửa. */
   async function loadFromDatabase() {
     if (!adminToken) return setMessage("Nhập mã quản trị để tải bản nháp từ Supabase.");
     setActionBusy(true);
     try {
-      const body = await responseData(await fetch("/api/page?draft=1", { headers: { "x-demo-admin-token": adminToken }, cache: "no-store" }));
-      const parsed = documentSchema.safeParse(body.document);
-      if (!parsed.success) throw new Error("Bản nháp trong Supabase không hợp lệ.");
-      load(parsed.data);
+      load(await builderApi.getDraftPage(adminToken));
       setMessage("Đã tải bản nháp từ Supabase.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Không thể tải bản nháp."); }
     finally { setActionBusy(false); }
   }
 
+  /** Lưu bản nháp, rồi xuất bản nếu người dùng chọn thao tác xuất bản. */
   async function saveToDatabase(publish = false) {
     if (!adminToken) return setMessage("Nhập mã quản trị để lưu vào Supabase.");
     setActionBusy(true);
     try {
-      const headers = { "x-demo-admin-token": adminToken, "content-type": "application/json" };
-      await responseData(await fetch("/api/page", { method: "PUT", headers, body: JSON.stringify(document) }));
-      if (publish) await responseData(await fetch("/api/page/publish", { method: "POST", headers }));
+      await builderApi.saveDraft(document, adminToken);
+      if (publish) await builderApi.publishDraft(adminToken);
       setMessage(publish ? "Đã xuất bản. Mở /site để xem." : "Đã lưu bản nháp vào Supabase.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Không thể lưu Supabase."); }
     finally { setActionBusy(false); }
   }
 
+  /** Hiển thị bản xem trước của loại khối đang được kéo từ thư viện. */
   function onDragStart(event: DragStartEvent) {
     const id = String(event.active.id);
     setDraggingKind(id.startsWith("palette:") ? id.slice(8) as BlockKind : null);
   }
 
+  /** Thêm khối mới hoặc chuyển vị trí khối đã có sau khi thả. */
   function onDragEnd(event: DragEndEvent) {
     setDraggingKind(null);
     const activeId = String(event.active.id);
@@ -277,6 +262,7 @@ export default function BuilderApp() {
     }
   }
 
+  /** Tải bố cục hiện tại xuống máy dưới dạng JSON. */
   function exportJson() {
     const blob = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -288,6 +274,7 @@ export default function BuilderApp() {
     setMessage("Đã tải xuống bố cục JSON.");
   }
 
+  /** Đọc tệp JSON, kiểm tra cấu trúc rồi nạp bố cục hợp lệ vào store. */
   async function importJson(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
