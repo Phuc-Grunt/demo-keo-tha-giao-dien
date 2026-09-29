@@ -1,12 +1,10 @@
 import { documentSchema } from "@/builder/model";
-import { isAdminRequest } from "@/lib/admin-auth";
 import { getDraftPage, getPublishedPage, hasAdminDatabase, hasPublicDatabase, saveDraft } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const draft = new URL(request.url).searchParams.get("draft") === "1";
-  if (draft && !isAdminRequest(request)) return Response.json({ error: "Mã quản trị không hợp lệ." }, { status: 401 });
   if (draft && !hasAdminDatabase()) return Response.json({ error: "Chưa cấu hình quyền ghi Supabase." }, { status: 503 });
   if (!draft && !hasPublicDatabase()) return Response.json({ error: "Chưa cấu hình Supabase." }, { status: 503 });
   try {
@@ -18,7 +16,6 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  if (!isAdminRequest(request)) return Response.json({ error: "Mã quản trị không hợp lệ." }, { status: 401 });
   if (!hasAdminDatabase()) return Response.json({ error: "Chưa cấu hình quyền ghi Supabase." }, { status: 503 });
   let input: unknown;
   try { input = await request.json(); } catch { return Response.json({ error: "JSON không hợp lệ." }, { status: 400 }); }

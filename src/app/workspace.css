@@ -722,8 +722,6 @@
   z-index: 3;
 }
 .bottom-spacer { flex: 1; }
-.bottom-tools label { color: #66788b; font-size: 10px; white-space: nowrap; }
-.bottom-tools input { width: 170px; min-width: 0; border: 1px solid #d6e0eb; border-radius: 5px; padding: 6px 8px; font-size: 10px; }
 .published-link { text-decoration: none; }
 .published-shell { max-width: 1180px; margin: 0 auto; padding: 20px; }
 .published-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 0 0 14px; color: #254b77; font-size: 14px; }
@@ -732,9 +730,7 @@
 .news-empty { grid-column: 1 / -1; color: #6b7f93; font-size: 12px; }
 @media (max-width: 750px) {
   .bottom-tools { gap: 6px; padding-left: 8px; overflow-x: auto; }
-  .bottom-tools label, .bottom-tools input { flex: none; }
   .bottom-tools .bottom-spacer { display: none; }
-  .bottom-tools input { width: 140px; }
   .bottom-tools button { font-size: 9px; }
   .published-link { display: none; }
 }

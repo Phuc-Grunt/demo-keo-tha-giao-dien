@@ -35,10 +35,9 @@ export async function getPublishedPage(signal?: AbortSignal): Promise<BuilderDoc
   return parseDocument(body.document, "Trang đã xuất bản không hợp lệ.");
 }
 
-/** Lấy bản nháp từ DB bằng mã quản trị do người dùng nhập. */
-export async function getDraftPage(adminToken: string): Promise<BuilderDocument> {
+/** Lấy bản nháp từ DB để tiếp tục chỉnh sửa. */
+export async function getDraftPage(): Promise<BuilderDocument> {
   const body = await responseData<{ document: unknown }>(await fetch("/api/page?draft=1", {
-    headers: { "x-demo-admin-token": adminToken },
     cache: "no-store",
   }));
   return parseDocument(body.document, "Bản nháp trong Supabase không hợp lệ.");
@@ -72,19 +71,18 @@ export async function getBlockData(block: BuilderBlock, signal: AbortSignal): Pr
   return { entries: await getContentEntries(block, signal) };
 }
 
-/** Lưu bố cục hiện tại thành bản nháp trong DB sau khi API kiểm tra mã. */
-export async function saveDraft(document: BuilderDocument, adminToken: string): Promise<void> {
+/** Lưu bố cục hiện tại thành bản nháp trong DB. */
+export async function saveDraft(document: BuilderDocument): Promise<void> {
   await responseData(await fetch("/api/page", {
     method: "PUT",
-    headers: { "x-demo-admin-token": adminToken, "content-type": "application/json" },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(document),
   }));
 }
 
-/** Đưa bản nháp đã lưu lên trang công khai sau khi API kiểm tra mã. */
-export async function publishDraft(adminToken: string): Promise<void> {
+/** Đưa bản nháp đã lưu lên trang công khai. */
+export async function publishDraft(): Promise<void> {
   await responseData(await fetch("/api/page/publish", {
     method: "POST",
-    headers: { "x-demo-admin-token": adminToken, "content-type": "application/json" },
   }));
 }

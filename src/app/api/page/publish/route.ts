@@ -1,8 +1,6 @@
-import { isAdminRequest } from "@/lib/admin-auth";
 import { hasAdminDatabase, publishDraft } from "@/lib/supabase";
 
-export async function POST(request: Request) {
-  if (!isAdminRequest(request)) return Response.json({ error: "Mã quản trị không hợp lệ." }, { status: 401 });
+export async function POST() {
   if (!hasAdminDatabase()) return Response.json({ error: "Chưa cấu hình quyền ghi Supabase." }, { status: 503 });
   try {
     await publishDraft();

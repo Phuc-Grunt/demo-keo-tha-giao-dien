@@ -46,7 +46,7 @@ export function hasPublicDatabase() {
 }
 
 export function hasAdminDatabase() {
-  return Boolean(adminClient() && process.env.DEMO_ADMIN_TOKEN);
+  return Boolean(adminClient());
 }
 
 function validatedDocument(value: unknown): BuilderDocument {
