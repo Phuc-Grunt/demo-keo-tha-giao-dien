@@ -1,0 +1,10 @@
+@import "./portal.css";
+@import "./workspace.css";
+
+:root { --ink:#182233; --muted:#788397; --line:#e8edf3; --blue:#1256a5; --workspace:#f2f5f9; }
+* { box-sizing:border-box; }
+html,body { margin:0; min-height:100%; background:#f5f7fa; color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+button,input,textarea { font:inherit; }
+button { cursor:pointer; }
+button:disabled { cursor:not-allowed; opacity:.35; }
+button:focus-visible,input:focus-visible,textarea:focus-visible { outline:2px solid #2e72ca; outline-offset:2px; }

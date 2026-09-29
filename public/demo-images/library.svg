@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Thư viện minh họa">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#496b83"/><stop offset="1" stop-color="#b4c9d2"/></linearGradient></defs>
+  <rect width="900" height="520" fill="url(#bg)"/><circle cx="730" cy="110" r="180" fill="#ffffff1b"/>
+  <rect x="105" y="98" width="690" height="336" rx="15" fill="#e7eef0"/>
+  <path d="M125 200h650M125 310h650" stroke="#698393" stroke-width="17"/>
+  <g fill="#28739b"><rect x="145" y="120" width="36" height="78" rx="4"/><rect x="320" y="225" width="42" height="82" rx="4"/><rect x="625" y="325" width="45" height="105" rx="4"/></g>
+  <g fill="#d18c68"><rect x="187" y="115" width="39" height="83" rx="4"/><rect x="368" y="219" width="35" height="88" rx="4"/><rect x="676" y="324" width="39" height="106" rx="4"/></g>
+  <g fill="#79a99c"><rect x="233" y="127" width="55" height="71" rx="4"/><rect x="420" y="231" width="55" height="76" rx="4"/><rect x="725" y="340" width="42" height="90" rx="4"/></g>
+  <path d="M507 197l35-75 40 18-35 75M195 307l30-80 39 14-30 80M498 430l37-107 44 15-37 107" fill="#d5b77e"/>
+</svg>

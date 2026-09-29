@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Khuôn viên giáo dục minh họa">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#4c88ad"/><stop offset="1" stop-color="#d1e7e7"/></linearGradient></defs>
+  <rect width="900" height="520" fill="url(#bg)"/><circle cx="715" cy="105" r="55" fill="#fff4cb"/><path d="M0 415q180-85 330-20t310-15q150-75 260-10v150H0z" fill="#80b99e"/>
+  <rect x="175" y="170" width="550" height="270" rx="8" fill="#f4efe3"/><path d="M142 178l310-125 306 125z" fill="#a95559"/>
+  <rect x="380" y="295" width="140" height="145" rx="70" fill="#376b84"/>
+  <g fill="#8fc4d0"><rect x="220" y="220" width="90" height="80" rx="8"/><rect x="590" y="220" width="90" height="80" rx="8"/><rect x="235" y="335" width="70" height="66" rx="8"/><rect x="595" y="335" width="70" height="66" rx="8"/></g>
+  <path d="M80 430v-165m0 70q-65-15-55-75 60-40 95 5 34 55-40 70zM820 435V270m0 70q-62-20-50-72 62-43 96 8 30 55-46 64z" stroke="#386f62" stroke-width="18" fill="#5a9e79"/>
+</svg>
