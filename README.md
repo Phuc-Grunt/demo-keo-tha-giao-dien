@@ -2,12 +2,18 @@
 
 Next.js, TypeScript và React. Trang biên tập ở `/`; trang đã xuất bản ở `/site`.
 
+## Giao diện Tailwind CSS và shadcn/ui
+
+- Tailwind CSS 4 được nạp từ `src/app/globals.css` qua PostCSS. CSS hiện có trong `portal.css` và `workspace.css` vẫn áp dụng cho giao diện cũ.
+- shadcn/ui dùng cấu hình `components.json`; các component được thêm vào `src/components/ui/`. Nút **Xuất bản** hiện dùng component `Button` làm ví dụ tích hợp.
+- Để thêm component khác, chạy `npx shadcn@latest add card` từ thư mục dự án, sau đó import từ `@/components/ui/card`.
+
 ## Thiết lập lần đầu
 
 1. Trong Supabase project `emgahpzaacjxpzvodvnh`, mở **SQL Editor** và chạy toàn bộ file [`supabase/migrations/202609290001_demo.sql`](supabase/migrations/202609290001_demo.sql). Script tạo `pages`, `categories`, `articles` và dữ liệu giả lập. Chạy lại không chèn trùng bản ghi mẫu.
    Sau đó chạy [`supabase/migrations/202609290002_dynamic_content.sql`](supabase/migrations/202609290002_dynamic_content.sql) để thêm URL ảnh và bảng `content_entries` cho Banner, Số liệu, Liên kết, Đoạn văn và Thư viện ảnh.
 2. Mở **Project Settings → API Keys**, lấy **secret key** (`sb_secret_...`). Thêm dòng `SUPABASE_SECRET_KEY=...` vào `.env.local` trên máy này. Giữ key này trong file local; không đưa vào mã client hoặc commit Git. URL và publishable key đã được cấu hình trong `.env.local`.
-3. Chạy `npm install` rồi `npm run dev`. Nếu server đang chạy khi sửa `.env.local`, khởi động lại server.
+3. Chạy `yarn install` rồi `yarn dev`. Nếu server đang chạy khi sửa `.env.local`, khởi động lại server.
 4. Mở `http://localhost:3000/`. Nhấn **Tải bản nháp từ DB** để lấy bố cục từ Supabase.
 5. Kéo thả một trong bảy loại khối. Với Tin tức/Thông báo, chọn **Chuyên mục** và **Cách lấy bài**. Với các khối danh sách, chỉnh **Số mục hiển thị** và **Số cột trên máy tính**. Nhấn **Xuất bản** để lưu bản nháp và cập nhật trang công khai. Mở `http://localhost:3000/site` để xem kết quả.
 

@@ -54,6 +54,7 @@ import {
   X,
 } from "lucide-react";
 import { BlockRenderer } from "./BlockRenderer";
+import { Button } from "@/components/ui/button";
 import { PortalChrome } from "./PortalChrome";
 import {
   blockCatalog,
@@ -832,13 +833,13 @@ export default function BuilderApp() {
           <Eye size={16} /> Trang đã xuất bản
         </Link>
         {/* <button className="outline-button" onClick={() => void saveToDatabase(false)} disabled={actionBusy}>Lưu vào DB</button> */}
-        <button
+        <Button
           className="primary-button"
           onClick={() => void saveToDatabase(true)}
           disabled={actionBusy}
         >
           Xuất bản
-        </button>
+        </Button>
       </header>
 
       <DndContext
