@@ -161,7 +161,7 @@ function SortableBlock({
         className="block-controls"
         onClick={(event) => event.stopPropagation()}
       >
-        <span className="block-type-tag">{blockCatalog[block.kind].label}</span>
+        <span className="block-type-tag">{blockCatalog[block.kind]?.label || block.kind}</span>
         <button
           title="Di chuyển lên"
           aria-label="Di chuyển lên"
@@ -365,12 +365,12 @@ function Inspector({
         <div className="selected-summary">
           <span className="summary-icon">
             {(() => {
-              const Icon = paletteIcons[block.kind];
+              const Icon = paletteIcons[block.kind] || CircleHelp;
               return <Icon size={18} />;
             })()}
           </span>
           <span>
-            <strong>{blockCatalog[block.kind].label}</strong>
+            <strong>{blockCatalog[block.kind]?.label || block.kind}</strong>
             <small>Đang chọn trên trang</small>
           </span>
           <Check size={16} />
@@ -442,7 +442,7 @@ function Inspector({
           <p className="field-help">
             {isArticleBlock
               ? "Bài viết từ bảng articles."
-              : `Nội dung ${blockCatalog[block.kind].label.toLowerCase()} từ bảng content_entries.`}{" "}
+              : `Nội dung ${blockCatalog[block.kind]?.label?.toLowerCase() || block.kind} từ bảng content_entries.`}{" "}
             Nếu DB chưa sẵn sàng, khối dùng nội dung mẫu.
           </p>
           {isArticleBlock && (
@@ -982,11 +982,11 @@ export default function BuilderApp() {
             <div className="drag-overlay">
               <span className="palette-icon">
                 {(() => {
-                  const Icon = paletteIcons[draggingKind];
+                  const Icon = paletteIcons[draggingKind] || CircleHelp;
                   return <Icon size={18} />;
                 })()}
               </span>
-              <strong>{blockCatalog[draggingKind].label}</strong>
+              <strong>{blockCatalog[draggingKind]?.label || draggingKind}</strong>
             </div>
           )}
         </DragOverlay>

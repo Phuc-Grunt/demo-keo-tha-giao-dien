@@ -16,5 +16,6 @@ export function BlockRenderer(props: BlockViewProps) {
     case "links": return <LinksBlock {...props} />;
     case "text": return <TextBlock {...props} />;
     case "gallery": return <GalleryBlock {...props} />;
+    default: return null;
   }
 }
