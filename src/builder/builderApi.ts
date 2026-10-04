@@ -67,7 +67,10 @@ async function getContentEntries(block: BuilderBlock, signal: AbortSignal): Prom
 
 /** Chọn API dữ liệu phù hợp với loại khối và trả dữ liệu cho BlockRenderer. */
 export async function getBlockData(block: BuilderBlock, signal: AbortSignal): Promise<BlockData> {
-  if (block.kind === "news" || block.kind === "notice") return { articles: await getArticles(block, signal) };
+  // Các block lấy từ bảng articles
+  if (["news", "notice", "ticker", "featured", "video", "events", "tabs"].includes(block.kind))
+    return { articles: await getArticles(block, signal) };
+  // Các block lấy từ bảng content_entries
   return { entries: await getContentEntries(block, signal) };
 }
 

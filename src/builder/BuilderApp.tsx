@@ -27,9 +27,12 @@ import {
   ArrowDown,
   ArrowUp,
   Blocks,
+  CalendarDays,
   Check,
   ChevronDown,
   CircleHelp,
+  Clapperboard,
+  Columns2,
   Copy,
   Download,
   Eye,
@@ -37,6 +40,7 @@ import {
   GripVertical,
   Image as ImageIcon,
   LayoutGrid,
+  LayoutTemplate,
   Link2,
   Megaphone,
   Menu,
@@ -45,8 +49,10 @@ import {
   Plus,
   Redo2,
   RotateCcw,
+  Rss,
   Settings2,
   Smartphone,
+  PanelTop,
   Trash2,
   Type,
   Undo2,
@@ -69,13 +75,19 @@ import type { BlockData } from "./builderApi";
 import type { Category } from "@/lib/supabase";
 
 const paletteIcons = {
-  hero: ImageIcon,
-  news: LayoutGrid,
-  notice: Megaphone,
-  stats: Blocks,
-  links: Link2,
-  text: Type,
-  gallery: ImageIcon,
+  hero:     ImageIcon,
+  news:     LayoutGrid,
+  notice:   Megaphone,
+  stats:    Blocks,
+  links:    Link2,
+  text:     Type,
+  gallery:  ImageIcon,
+  ticker:   Rss,
+  featured: LayoutTemplate,
+  video:    Clapperboard,
+  events:   CalendarDays,
+  tabs:     PanelTop,
+  columns:  Columns2,
 };
 
 /** Hiển thị một loại khối trong thư viện để thêm bằng nút hoặc kéo thả. */
@@ -201,7 +213,7 @@ function SortableBlock({
           <GripVertical size={16} />
         </button>
       </div>
-      <BlockRenderer block={block} {...data} />
+      <BlockRenderer block={block} {...data} isEditor={true} />
     </div>
   );
 }
@@ -279,8 +291,10 @@ function Inspector({
   const update = useBuilderStore((state) => state.update);
   const remove = useBuilderStore((state) => state.remove);
   const duplicate = useBuilderStore((state) => state.duplicate);
+  const setSlotCount = useBuilderStore((state) => state.setSlotCount);
   const name = useBuilderStore((state) => state.document.name);
   const rename = useBuilderStore((state) => state.rename);
+  const moveNode = useBuilderStore((state) => state.moveNode);
 
   if (!block)
     return (
@@ -334,16 +348,45 @@ function Inspector({
   const hasItems =
     ["news", "notice", "stats", "links", "gallery"].includes(block.kind) &&
     !block.dataSource;
+  // tabs block dùng items làm tên tab
+  const hasTabItems = block.kind === "tabs";
+  const isColumnsBlock = block.kind === "columns";
   const source = getBlockSource(block);
-  const isArticleBlock = block.kind === "news" || block.kind === "notice";
+  const isArticleBlock = ["news", "notice", "ticker", "featured", "video", "events", "tabs"].includes(block.kind);
   const isRepeatBlock = [
-    "news",
-    "notice",
-    "stats",
-    "links",
-    "gallery",
+    "news", "notice", "stats", "links", "gallery",
+    "ticker", "featured", "video", "events", "tabs",
   ].includes(block.kind);
-  const hasColumns = ["news", "stats", "links", "gallery"].includes(block.kind);
+  // Variant & columns
+  const blockVariant = block.variant ?? "";
+  const variantOptions: Partial<Record<typeof block.kind, { value: string; label: string }[]>> = {
+    featured: [
+      { value: "classic", label: "Ảnh lớn + danh sách" },
+      { value: "grid",    label: "Lưới nhiều cột" },
+    ],
+    video: [
+      { value: "sidebar", label: "Video lớn + danh sách" },
+      { value: "grid",    label: "Lưới thumbnail" },
+    ],
+    events: [
+      { value: "timeline", label: "Dòng thời gian" },
+      { value: "cards",    label: "Thẻ sự kiện" },
+    ],
+    tabs: [
+      { value: "underline", label: "Gạch chân" },
+      { value: "pills",     label: "Viên nật (pills)" },
+    ],
+  };
+  const currentVariantOpts = variantOptions[block.kind as keyof typeof variantOptions];
+  const hasVariant = !!currentVariantOpts;
+  // Columns: chỉ hiện khi layout dùng grid/cards, hoặc block cũ
+  const hasColumns =
+    ["news", "stats", "links", "gallery"].includes(block.kind) ||
+    (block.kind === "featured" && (blockVariant === "grid" || !blockVariant)) ||
+    (block.kind === "video"    && (blockVariant === "grid" || !blockVariant)) ||
+    (block.kind === "events"   && (blockVariant === "cards" || !blockVariant)) ||
+    block.kind === "tabs";
+  const isNewsArticleBlock = block.kind === "news" || block.kind === "notice";
   return (
     <aside className={`inspector ${mobileOpen ? "mobile-open" : ""}`}>
       <div className="panel-header">
@@ -434,6 +477,74 @@ function Inspector({
             </>
           )}
         </div>
+        {/* ── Columns block: cấu hình số cột ── */}
+        {isColumnsBlock && (
+          <div className="inspector-section">
+            <div className="inspector-section-heading">
+              BỐ CỤC LƯỚI CỘT <ChevronDown size={14} />
+            </div>
+            <label className="field-label" htmlFor="col-count">
+              Số cột
+            </label>
+            <div className="col-count-btns">
+              {[1, 2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  id={`col-count-${n}`}
+                  className={`col-count-btn${(block.dataSource?.columns ?? 2) === n ? " active" : ""}`}
+                  onClick={() => setSlotCount(block.id, n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <label className="field-label" htmlFor="col-gap">
+              Khoảng cách cột (px)
+            </label>
+            <input
+              id="col-gap"
+              className="field-input"
+              type="number"
+              value={block.dataSource?.gap ?? 16}
+              onChange={(e) => update(block.id, { dataSource: { ...source, gap: Number(e.target.value) } })}
+            />
+            
+            <label className="field-label" htmlFor="col-ratio">
+              Tỷ lệ cột (vd: 1fr 2fr 1fr)
+            </label>
+            <input
+              id="col-ratio"
+              className="field-input"
+              type="text"
+              placeholder="VD: 1fr 1fr"
+              value={block.dataSource?.gridTemplate || ""}
+              onChange={(e) => update(block.id, { dataSource: { ...source, gridTemplate: e.target.value } })}
+            />
+
+            <label className="field-label" htmlFor="col-padding">
+              Padding (px)
+            </label>
+            <input
+              id="col-padding"
+              className="field-input"
+              type="number"
+              value={block.dataSource?.padding ?? 0}
+              onChange={(e) => update(block.id, { dataSource: { ...source, padding: Number(e.target.value) } })}
+            />
+
+            <label className="field-label" htmlFor="col-bg">
+              Màu nền
+            </label>
+            <input
+              id="col-bg"
+              className="field-input"
+              type="text"
+              placeholder="Ví dụ: #f8fafc"
+              value={block.dataSource?.backgroundColor || ""}
+              onChange={(e) => update(block.id, { dataSource: { ...source, backgroundColor: e.target.value } })}
+            />
+          </div>
+        )}
         <div className="inspector-section">
           <div className="inspector-section-heading">
             NGUỒN DỮ LIỆU <ChevronDown size={14} />
@@ -444,7 +555,7 @@ function Inspector({
               : `Nội dung ${blockCatalog[block.kind].label.toLowerCase()} từ bảng content_entries.`}{" "}
             Nếu DB chưa sẵn sàng, khối dùng nội dung mẫu.
           </p>
-          {isArticleBlock && (
+          {isNewsArticleBlock && (
             <>
               <label className="field-label" htmlFor="source-category">
                 Chuyên mục
@@ -485,6 +596,24 @@ function Inspector({
                 <option value="latest">Mới nhất</option>
                 <option value="hot">Nổi bật / đọc nhiều</option>
               </select>
+            </>
+          )}
+          {hasTabItems && (
+            <>
+              <label className="field-label" htmlFor="tab-names">
+                Tên các tab <small>(mỗi dòng một tab, tối đa 4)</small>
+              </label>
+              <textarea
+                id="tab-names"
+                className="field-input field-textarea"
+                value={block.items.join("\n")}
+                onChange={(event) =>
+                  update(block.id, {
+                    items: event.target.value.split("\n").slice(0, 4),
+                  })
+                }
+                rows={4}
+              />
             </>
           )}
           {isRepeatBlock && (
@@ -544,6 +673,26 @@ function Inspector({
           <div className="inspector-section-heading">
             GIAO DIỆN <ChevronDown size={14} />
           </div>
+          {hasVariant && currentVariantOpts && (
+            <>
+              <label className="field-label" htmlFor="block-variant">
+                Kiểu layout
+              </label>
+              <div className="variant-options">
+                {currentVariantOpts.map((opt) => (
+                  <button
+                    key={opt.value}
+                    id={`variant-${opt.value}`}
+                    className={`variant-btn${(blockVariant || currentVariantOpts[0].value) === opt.value ? " variant-btn-active" : ""}`}
+                    onClick={() => update(block.id, { variant: opt.value })}
+                    title={opt.label}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <span className="field-label">Màu nhấn</span>
           <div className="color-options">
             {(["blue", "red", "green"] as const).map((accent) => (
@@ -715,17 +864,8 @@ export default function BuilderApp() {
     const activeId = String(event.active.id);
     const overId = event.over ? String(event.over.id) : null;
     if (!overId || overId.startsWith("palette:")) return;
-    const targetId = overId === "canvas" ? undefined : overId;
-    if (activeId.startsWith("palette:"))
-      add(activeId.slice(8) as BlockKind, targetId);
-    else {
-      const from = document.blocks.findIndex((block) => block.id === activeId);
-      const to = document.blocks.findIndex((block) => block.id === targetId);
-      move(
-        activeId,
-        from >= 0 && to > from ? document.blocks[to + 1]?.id : targetId,
-      );
-    }
+    
+    useBuilderStore.getState().moveNode(activeId, overId);
   }
 
   /** Tải bố cục hiện tại xuống máy dưới dạng JSON. */
@@ -766,6 +906,7 @@ export default function BuilderApp() {
         <BlockRenderer
           block={block}
           {...dataByBlock[block.id]}
+          isEditor={false}
           key={block.id}
         />
       ))}
@@ -885,26 +1026,35 @@ export default function BuilderApp() {
             </div>
             <div className="palette-body">
               <p className="palette-intro">
-                Kéo thả hoặc nhấn dấu + để thêm thành phần vào trang.
+                Kéo thả hoặc nhấn <strong>+</strong> để thêm vào trang.
               </p>
-              <div className="palette-group-title">
-                CÁC KHỐI NỘI DUNG <span>{blockKinds.length}</span>
-              </div>
-              <div className="palette-list">
-                {blockKinds.map((kind) => (
-                  <PaletteItem key={kind} kind={kind} />
-                ))}
-              </div>
+              {/* Nhóm theo danh mục giống WordPress Gutenberg */}
+              {(["Trang chủ", "Tin tức", "Đa phương tiện", "Tiện ích", "Điều hướng", "Cơ bản"] as const).map((cat) => {
+                const kinds = blockKinds.filter((k) => blockCatalog[k].category === cat);
+                if (!kinds.length) return null;
+                return (
+                  <div key={cat} className="palette-category">
+                    <div className="palette-group-title">
+                      {cat.toUpperCase()} <span>{kinds.length}</span>
+                    </div>
+                    <div className="palette-list">
+                      {kinds.map((kind) => (
+                        <PaletteItem key={kind} kind={kind} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
               <div className="palette-tip">
                 <span>✦</span>
                 <strong>Mẹo nhỏ</strong>
                 <p>
-                  Chọn một khối trên trang để thay đổi nội dung trong bảng thuộc
-                  tính.
+                  Kéo trực tiếp vào vị trí bất kỳ trên canvas để chèn khối vào đúng chỗ.
                 </p>
               </div>
             </div>
           </aside>
+
 
           <section className="main-workspace" aria-label="Vùng chỉnh sửa trang">
             <div className="workspace-toolbar">
@@ -1046,6 +1196,27 @@ export default function BuilderApp() {
               <strong>Xem trước trang</strong>
               <span className="preview-badge">BẢN NHÁP</span>
             </div>
+            <div className="toolbar-actions" style={{ marginLeft: "auto", marginRight: "16px" }}>
+              <span className="toolbar-label">Thiết bị</span>
+              <div className="device-switch">
+                <button
+                  className={device === "desktop" ? "active" : ""}
+                  title="Màn hình máy tính"
+                  aria-label="Màn hình máy tính"
+                  onClick={() => setDevice("desktop")}
+                >
+                  <Monitor size={17} />
+                </button>
+                <button
+                  className={device === "mobile" ? "active" : ""}
+                  title="Điện thoại"
+                  aria-label="Điện thoại"
+                  onClick={() => setDevice("mobile")}
+                >
+                  <Smartphone size={17} />
+                </button>
+              </div>
+            </div>
             <button
               className="outline-button"
               onClick={() => setPreview(false)}
@@ -1053,7 +1224,11 @@ export default function BuilderApp() {
               <X size={16} /> Đóng xem trước
             </button>
           </div>
-          <div className="preview-scroll">{previewPage}</div>
+          <div className="preview-scroll">
+            <div className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}>
+              {previewPage}
+            </div>
+          </div>
         </div>
       )}
     </div>
