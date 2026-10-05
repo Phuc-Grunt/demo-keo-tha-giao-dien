@@ -52,6 +52,7 @@ import {
   BuilderBlock,
   DEFAULT_PAGE_WIDTH,
   documentSchema,
+  findBlock,
   getBlockSource,
   type TextStyle,
   type TextStyleTarget,
@@ -212,7 +213,7 @@ const BuilderApp = () => {
     const activeId = String(event.active.id);
     const overId = event.over ? String(event.over.id) : null;
     if (!overId || overId.startsWith("palette:")) return;
-    
+
     useBuilderStore.getState().moveNode(activeId, overId);
   }
 

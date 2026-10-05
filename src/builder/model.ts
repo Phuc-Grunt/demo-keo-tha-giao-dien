@@ -98,13 +98,27 @@ export const documentSchema = z.object({
   version: z.literal(1),
   name: z.string().max(100),
   pageWidth: z.number().int().min(MIN_PAGE_WIDTH).max(MAX_PAGE_WIDTH).optional(),
+  themeColor: z.string().max(30).optional(),
   blocks: z.array(blockSchema).max(100),
 }).refine((document) => new Set(document.blocks.map((block) => block.id)).size === document.blocks.length, {
   message: "ID của các khối phải khác nhau.",
 });
 
-export type BuilderDocument = { version: 1; name: string; pageWidth?: number; blocks: BuilderBlock[] };
+export type BuilderDocument = { version: 1; name: string; pageWidth?: number; themeColor?: string; blocks: BuilderBlock[] };
 export type BlockDataSource = z.infer<typeof dataSourceSchema>;
+
+export function findBlock(blocks: BuilderBlock[], id: string): BuilderBlock | undefined {
+  for (const block of blocks) {
+    if (block.id === id) return block;
+    if (block.slots) {
+      for (const col of block.slots) {
+        const found = findBlock(col, id);
+        if (found) return found;
+      }
+    }
+  }
+  return undefined;
+}
 
 const sourceDefaults: Record<BlockKind, BlockDataSource> = {
   hero:     { categorySlug: "", mode: "latest", limit: 1, columns: 1 },

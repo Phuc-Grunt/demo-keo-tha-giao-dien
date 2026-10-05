@@ -17,15 +17,18 @@ const EditorCanvas = ({
   dataByBlock,
 }: EditorCanvasProps) => {
   const blocks = useBuilderStore((state) => state.document.blocks);
+  const themeColor = useBuilderStore((state) => state.document.themeColor);
   const add = useBuilderStore((state) => state.add);
   const selectedId = useBuilderStore((state) => state.selectedId);
+  const select = useBuilderStore((state) => state.select);
   const { setNodeRef, isOver } = useDroppable({ id: "canvas" });
   return (
     <div
       ref={setNodeRef}
       className={`editor-canvas ${isOver ? "canvas-over" : ""}`}
+      onClick={() => select(null)}
     >
-      <PortalChrome>
+      <PortalChrome themeColor={themeColor}>
         <SortableContext
           items={blocks.map((block) => block.id)}
           strategy={verticalListSortingStrategy}

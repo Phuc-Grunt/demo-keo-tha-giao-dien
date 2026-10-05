@@ -1,7 +1,9 @@
 import { Check, ChevronDown, CircleHelp, Copy, MoreHorizontal, Settings2, Trash2, X } from "lucide-react";
 import type { Category } from "@/lib/supabase";
-import { blockCatalog, getBlockSource } from "../model";
+import { blockCatalog, getBlockSource, findBlock, DEFAULT_PAGE_WIDTH } from "../model";
+import type { TextStyle, TextStyleTarget, BuilderBlock } from "../model";
 import { useBuilderStore } from "../store";
+import { ColorPalette, PageWidthControl, TextStyleControls, defaultAccentColors } from "../InspectorControls";
 import paletteIcons from "./paletteIcons";
 
 interface InspectorProps {
@@ -23,7 +25,7 @@ const Inspector = ({
 }: InspectorProps) => {
   const selectedId = useBuilderStore((state) => state.selectedId);
   const block = useBuilderStore((state) =>
-    state.document.blocks.find((item) => item.id === selectedId),
+    selectedId ? findBlock(state.document.blocks, selectedId) : undefined
   );
   const update = useBuilderStore((state) => state.update);
   const remove = useBuilderStore((state) => state.remove);
@@ -31,6 +33,10 @@ const Inspector = ({
   const setSlotCount = useBuilderStore((state) => state.setSlotCount);
   const name = useBuilderStore((state) => state.document.name);
   const rename = useBuilderStore((state) => state.rename);
+  const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
+  const setPageWidth = useBuilderStore((state) => state.setPageWidth);
+  const themeColor = useBuilderStore((state) => state.document.themeColor);
+  const setThemeColor = useBuilderStore((state) => state.setThemeColor);
 
   if (!block)
     return (
@@ -70,6 +76,22 @@ const Inspector = ({
             onChange={(event) => rename(event.target.value)}
             maxLength={100}
           />
+          <label className="field-label" htmlFor="page-width">
+            Độ rộng trang <small>(px)</small>
+          </label>
+          <PageWidthControl value={pageWidth} onChange={setPageWidth} showPresets />
+          <p className="field-help">
+            Áp dụng cho trình dựng, bản xem trước và trang đã xuất bản.
+          </p>
+          
+          <label className="field-label" htmlFor="page-theme">
+            Màu giao diện chung
+          </label>
+          <ColorPalette id="page-theme" value={themeColor || ""} onChange={setThemeColor} />
+          <p className="field-help">
+            Màu chủ đạo cho trang web, có thể dùng làm nền hoặc màu nhấn.
+          </p>
+
           <div className="inspector-hint">
             <CircleHelp size={15} />
             <span>
@@ -93,9 +115,30 @@ const Inspector = ({
     "news", "notice", "stats", "links", "gallery",
     "ticker", "featured", "video", "events", "tabs",
   ].includes(block.kind);
+
+  /** Cập nhật cỡ chữ/màu chữ của một phần nội dung; xóa khóa khi quay về mặc định. */
+  function updateTextStyle(target: TextStyleTarget, style: TextStyle | undefined) {
+    const next = { ...block!.textStyles };
+    if (style) next[target] = style;
+    else delete next[target];
+    update(block!.id, { textStyles: Object.keys(next).length ? next : undefined });
+  }
+
+  /** Chọn màu nhấn; nếu trùng 3 màu mặc định thì quay lại màu nhấn có sẵn. */
+  function selectAccentColor(color: string) {
+    const preset = (Object.keys(defaultAccentColors) as BuilderBlock["accent"][]).find(
+      (key) => defaultAccentColors[key].toLowerCase() === color.toLowerCase(),
+    );
+    update(block!.id, preset ? { accent: preset, accentColor: undefined } : { accentColor: color });
+  }
+
   // Variant & columns
   const blockVariant = block.variant ?? "";
   const variantOptions: Partial<Record<typeof block.kind, VariantOption[]>> = {
+    hero: [
+      { value: "classic", label: "Chia đôi" },
+      { value: "full",    label: "Toàn màn hình" },
+    ],
     featured: [
       { value: "classic", label: "Ảnh lớn + danh sách" },
       { value: "grid",    label: "Lưới nhiều cột" },
@@ -153,10 +196,11 @@ const Inspector = ({
           </span>
           <Check size={16} />
         </div>
-        <div className="inspector-section">
-          <div className="inspector-section-heading">
-            NỘI DUNG <ChevronDown size={14} />
-          </div>
+        {!isColumnsBlock && (
+          <div className="inspector-section">
+            <div className="inspector-section-heading">
+              NỘI DUNG <ChevronDown size={14} />
+            </div>
           <label className="field-label" htmlFor="eyebrow">
             Nhãn nhỏ
           </label>
@@ -168,6 +212,11 @@ const Inspector = ({
             onChange={(event) =>
               update(block.id, { eyebrow: event.target.value })
             }
+          />
+          <TextStyleControls
+            idPrefix="eyebrow"
+            value={block.textStyles?.eyebrow}
+            onChange={(style) => updateTextStyle("eyebrow", style)}
           />
           <label className="field-label" htmlFor="title">
             Tiêu đề
@@ -181,6 +230,11 @@ const Inspector = ({
               update(block.id, { title: event.target.value })
             }
           />
+          <TextStyleControls
+            idPrefix="title"
+            value={block.textStyles?.title}
+            onChange={(style) => updateTextStyle("title", style)}
+          />
           <label className="field-label" htmlFor="description">
             Mô tả
           </label>
@@ -193,6 +247,11 @@ const Inspector = ({
               update(block.id, { description: event.target.value })
             }
             rows={4}
+          />
+          <TextStyleControls
+            idPrefix="description"
+            value={block.textStyles?.description}
+            onChange={(style) => updateTextStyle("description", style)}
           />
           {hasItems && (
             <>
@@ -212,7 +271,44 @@ const Inspector = ({
               />
             </>
           )}
+          {block.kind === "hero" && (
+            <>
+              <label className="field-label" htmlFor="imageUrl">
+                Hình ảnh (URL)
+              </label>
+              <input
+                id="imageUrl"
+                className="field-input"
+                type="text"
+                placeholder="https://..."
+                value={block.imageUrl || ""}
+                onChange={(event) => update(block.id, { imageUrl: event.target.value })}
+              />
+              <label className="field-label" htmlFor="imageUpload">
+                Tải ảnh lên (Từ máy tính)
+              </label>
+              <input
+                id="imageUpload"
+                className="field-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      if (ev.target?.result) {
+                        update(block.id, { imageUrl: ev.target.result as string });
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </>
+          )}
         </div>
+        )}
         {/* ── Columns block: cấu hình số cột ── */}
         {isColumnsBlock && (
           <div className="inspector-section">
@@ -271,13 +367,10 @@ const Inspector = ({
             <label className="field-label" htmlFor="col-bg">
               Màu nền
             </label>
-            <input
+            <ColorPalette
               id="col-bg"
-              className="field-input"
-              type="text"
-              placeholder="Ví dụ: #f8fafc"
               value={block.dataSource?.backgroundColor || ""}
-              onChange={(e) => update(block.id, { dataSource: { ...source, backgroundColor: e.target.value } })}
+              onChange={(color) => update(block.id, { dataSource: { ...source, backgroundColor: color } })}
             />
           </div>
         )}
@@ -405,10 +498,11 @@ const Inspector = ({
             </>
           )}
         </div>
-        <div className="inspector-section">
-          <div className="inspector-section-heading">
-            GIAO DIỆN <ChevronDown size={14} />
-          </div>
+        {!isColumnsBlock && (
+          <div className="inspector-section">
+            <div className="inspector-section-heading">
+              GIAO DIỆN <ChevronDown size={14} />
+            </div>
           {hasVariant && currentVariantOpts && (
             <>
               <label className="field-label" htmlFor="block-variant">
@@ -430,24 +524,13 @@ const Inspector = ({
             </>
           )}
           <span className="field-label">Màu nhấn</span>
-          <div className="color-options">
-            {(["blue", "red", "green"] as const).map((accent) => (
-              <button
-                key={accent}
-                className={`color-option color-${accent} ${block.accent === accent ? "active" : ""}`}
-                onClick={() => update(block.id, { accent })}
-                title={
-                  accent === "blue"
-                    ? "Xanh dương"
-                    : accent === "red"
-                      ? "Đỏ"
-                      : "Xanh lá"
-                }
-                aria-label={`Chọn màu ${accent}`}
-              />
-            ))}
-          </div>
+          <ColorPalette
+            id="accent-color"
+            value={block.accentColor ?? defaultAccentColors[block.accent]}
+            onChange={selectAccentColor}
+          />
         </div>
+        )}
         <div className="inspector-actions">
           <button onClick={() => duplicate(block.id)}>
             <Copy size={15} /> Nhân bản

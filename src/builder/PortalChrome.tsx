@@ -1,8 +1,9 @@
 import { BookOpen } from "lucide-react";
 import type { ReactNode } from "react";
 
-export function PortalChrome({ children }: { children: ReactNode }) {
-  return <div className="portal-page">
+export function PortalChrome({ children, themeColor }: { children: ReactNode; themeColor?: string }) {
+  const style = themeColor ? { "--theme-color": themeColor } as React.CSSProperties : undefined;
+  return <div className="portal-page" style={style}>
     <div className="portal-topline"><span>Thứ Ba, ngày 29 tháng 9 năm 2026</span><span>English <span className="topline-divider">|</span> Liên hệ</span></div>
     <div className="portal-header">
       <div className="portal-seal"><BookOpen size={25} strokeWidth={1.6} /></div>
