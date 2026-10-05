@@ -18,6 +18,7 @@ type BuilderState = {
   /** Đổi độ rộng (px) của trang trong trình dựng và trang đã xuất bản. */
   setPageWidth: (width: number) => void;
   setThemeColor: (color: string) => void;
+  setThemeFont: (font: string) => void;
   add: (kind: BlockKind, beforeId?: string) => void;
   move: (id: string, overId?: string) => void;
   moveNode: (activeId: string, overId: string | null) => void;
@@ -88,6 +89,15 @@ export const useBuilderStore = create<BuilderState>()(
           if (state.document.themeColor === themeColor) return state;
           return {
             document: { ...state.document, themeColor },
+            past: [...state.past.slice(-29), state.document],
+            future: [],
+          };
+        }),
+      setThemeFont: (themeFont) =>
+        set((state) => {
+          if (state.document.themeFont === themeFont) return state;
+          return {
+            document: { ...state.document, themeFont },
             past: [...state.past.slice(-29), state.document],
             future: [],
           };

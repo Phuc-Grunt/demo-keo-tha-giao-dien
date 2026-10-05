@@ -40,6 +40,6 @@ export default async function PublishedSite() {
   return <div className="published-shell" style={{ maxWidth: shellWidth }}>
     <div className="published-toolbar"><strong>Trang đã xuất bản</strong><Link href="/">Mở trình biên tập</Link></div>
     {notice && <div className="published-notice" role="status">{notice}</div>}
-    <PortalChrome themeColor={document.themeColor}>{document.blocks.map((block) => <BlockRenderer key={block.id} block={block} isEditor={false} {...dataByBlock[block.id]} />)}</PortalChrome>
+    <PortalChrome themeColor={document.themeColor} themeFont={document.themeFont}>{document.blocks.map((block) => <BlockRenderer key={block.id} block={block} isEditor={false} {...dataByBlock[block.id]} />)}</PortalChrome>
   </div>;
 }

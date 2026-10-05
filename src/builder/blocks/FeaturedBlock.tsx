@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { BookOpen } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
@@ -52,8 +55,21 @@ const FeaturedBlock = ({ block, articles }: BlockViewProps) => {
   }
 
   /* ────── CLASSIC variant (default) ────── */
-  const main = items[0] ?? { id: "0", title: "Tiêu đề tin chính", date: "Dữ liệu mẫu", cat: "Tin nổi bật", img: null };
-  const side = items.slice(1, 6);
+  const isAuto = block.autoSlide;
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isAuto || items.length === 0) return;
+    const interval = block.slideInterval ?? 3;
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % Math.min(items.length, 5));
+    }, interval * 1000);
+    return () => clearInterval(timer);
+  }, [isAuto, block.slideInterval, items.length]);
+
+  const mainIndex = isAuto ? activeIndex : 0;
+  const main = items[mainIndex] ?? { id: "0", title: "Tiêu đề tin chính", date: "Dữ liệu mẫu", cat: "Tin nổi bật", img: null };
+  const side = isAuto ? items.slice(0, 5) : items.slice(1, 6);
 
   return (
     <section id={block.id} className={`render-block content-section featured-section accent-${block.accent}`}>
@@ -61,7 +77,7 @@ const FeaturedBlock = ({ block, articles }: BlockViewProps) => {
       <div className="featured-classic">
         {/* Tin chính – ảnh phủ toàn */}
         <article className="featured-main">
-          <div className="featured-main-img">
+          <div className="featured-main-img animate-in fade-in duration-500" key={main.id}>
             <BlockImage
               src={main.img}
               alt={main.title}
@@ -79,15 +95,28 @@ const FeaturedBlock = ({ block, articles }: BlockViewProps) => {
           <div className="featured-side-header">Tin liên quan</div>
           {side.length === 0
             ? <p className="news-empty" style={{ padding: "16px" }}>Chưa có tin liên quan.</p>
-            : side.map((item, i) => (
-              <article key={item.id} className="featured-side-row">
-                <span className={`featured-rank rank-${i + 1}`}>{String(i + 2).padStart(2, "0")}</span>
-                <div className="featured-side-body">
-                  <strong>{item.title}</strong>
-                  <span className="card-meta">{item.date}</span>
-                </div>
-              </article>
-            ))}
+            : side.map((item, i) => {
+              const isActive = isAuto && i === activeIndex;
+              const displayRank = isAuto ? i + 1 : i + 2;
+              return (
+                <article 
+                  key={item.id} 
+                  className={`featured-side-row ${isActive ? "active-slide" : ""}`}
+                  style={{ 
+                    cursor: isAuto ? "pointer" : "default",
+                    backgroundColor: isActive ? "rgba(0,0,0,0.03)" : "transparent",
+                    transition: "background-color 0.2s"
+                  }}
+                  onClick={isAuto ? () => setActiveIndex(i) : undefined}
+                >
+                  <span className={`featured-rank rank-${displayRank}`}>{String(displayRank).padStart(2, "0")}</span>
+                  <div className="featured-side-body">
+                    <strong style={{ color: isActive ? "var(--primary)" : "inherit" }}>{item.title}</strong>
+                    <span className="card-meta">{item.date}</span>
+                  </div>
+                </article>
+              );
+            })}
         </div>
       </div>
     </section>

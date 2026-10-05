@@ -62,6 +62,7 @@ import {
   defaultAccentColors,
   PageWidthControl,
   TextStyleControls,
+  FontPicker,
 } from "./InspectorControls";
 import { useBuilderStore } from "./store";
 import * as builderApi from "./builderApi";
@@ -89,6 +90,8 @@ const BuilderApp = () => {
   const [paletteOpen, setPaletteOpen] = useState(true);
   const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
   const setPageWidth = useBuilderStore((state) => state.setPageWidth);
+  const themeFont = useBuilderStore((state) => state.document.themeFont);
+  const setThemeFont = useBuilderStore((state) => state.setThemeFont);
   const [draggingKind, setDraggingKind] = useState<BlockKind | null>(null);
   const [message, setMessage] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
@@ -444,6 +447,10 @@ const BuilderApp = () => {
                   onChange={setPageWidth}
                   disabled={device === "mobile"}
                 />
+                <span className="toolbar-label">Font chung</span>
+                <div style={{ width: 140 }}>
+                  <FontPicker id="toolbar-theme-font" value={themeFont} onChange={setThemeFont} />
+                </div>
                 <span className="toolbar-label">Thiết bị</span>
                 <div className="device-switch">
                   <button
