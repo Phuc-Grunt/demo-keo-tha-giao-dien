@@ -1,9 +1,10 @@
 import { ArrowRight, GraduationCap } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { safeHref } from "./types";
-import { BlockImage } from "./BlockImage";
+import BlockImage from "./BlockImage";
 
-export function HeroBlock({ block, entries }: BlockViewProps) {
+/** Hiển thị khu vực giới thiệu nổi bật của trang. */
+const HeroBlock = ({ block, entries }: BlockViewProps) => {
   const hero = entries?.[0];
   const href = safeHref(hero?.href);
   const cta = <>Khám phá ngay <ArrowRight size={15} /></>;
@@ -24,4 +25,6 @@ export function HeroBlock({ block, entries }: BlockViewProps) {
       </>} />
     </div>
   </section>;
-}
+};
+
+export default HeroBlock;
