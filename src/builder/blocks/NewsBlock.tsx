@@ -1,8 +1,8 @@
 import { BookOpen } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
-import { BlockImage } from "./BlockImage";
 import { SectionHeading } from "./SectionHeading";
+import BlockImage from "./BlockImage";
 
 export function NewsBlock({ block, articles }: BlockViewProps) {
   const titles = articles?.map((article) => article.title) ?? fallbackItems(block);

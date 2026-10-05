@@ -5,7 +5,7 @@ import { NoticeBlock } from "./blocks/NoticeBlock";
 import { StatsBlock } from "./blocks/StatsBlock";
 import { LinksBlock } from "./blocks/LinksBlock";
 import { TextBlock } from "./blocks/TextBlock";
-import { GalleryBlock } from "./blocks/GalleryBlock";
+import GalleryBlock from "./blocks/GalleryBlock";
 
 export function BlockRenderer(props: BlockViewProps) {
   switch (props.block.kind) {

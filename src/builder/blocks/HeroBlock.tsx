@@ -1,7 +1,7 @@
 import { ArrowRight, GraduationCap } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { safeHref } from "./types";
-import { BlockImage } from "./BlockImage";
+import BlockImage from "./BlockImage";
 
 export function HeroBlock({ block, entries }: BlockViewProps) {
   const hero = entries?.[0];
