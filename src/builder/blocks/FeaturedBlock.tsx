@@ -1,8 +1,8 @@
 import { BookOpen } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
-import { BlockImage } from "./BlockImage";
-import { SectionHeading } from "./SectionHeading";
+import BlockImage from "./BlockImage";
+import SectionHeading from "./SectionHeading";
 import type { Article } from "@/lib/supabase";
 
 type SimpleItem = { id: string; title: string; date: string; cat: string; img: string | null };
@@ -17,7 +17,8 @@ function toSimple(articles: Article[]): SimpleItem[] {
   }));
 }
 
-export function FeaturedBlock({ block, articles }: BlockViewProps) {
+/** Hiển thị nhóm tin nổi bật theo bố cục đã chọn. */
+const FeaturedBlock = ({ block, articles }: BlockViewProps) => {
   const variant = block.variant ?? "classic";
   const items: SimpleItem[] = articles && articles.length > 0
     ? toSimple(articles)
@@ -91,4 +92,6 @@ export function FeaturedBlock({ block, articles }: BlockViewProps) {
       </div>
     </section>
   );
-}
+};
+
+export default FeaturedBlock;

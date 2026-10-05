@@ -1,13 +1,20 @@
 import type { BlockViewProps } from "./blocks/types";
-import { HeroBlock } from "./blocks/HeroBlock";
-import { NewsBlock } from "./blocks/NewsBlock";
-import { NoticeBlock } from "./blocks/NoticeBlock";
-import { StatsBlock } from "./blocks/StatsBlock";
-import { LinksBlock } from "./blocks/LinksBlock";
-import { TextBlock } from "./blocks/TextBlock";
+import HeroBlock from "./blocks/HeroBlock";
+import NewsBlock from "./blocks/NewsBlock";
+import NoticeBlock from "./blocks/NoticeBlock";
+import StatsBlock from "./blocks/StatsBlock";
+import LinksBlock from "./blocks/LinksBlock";
+import TextBlock from "./blocks/TextBlock";
 import GalleryBlock from "./blocks/GalleryBlock";
+import TickerBlock from "./blocks/TickerBlock";
+import FeaturedBlock from "./blocks/FeaturedBlock";
+import EventsBlock from "./blocks/EventsBlock";
+import VideoBlock from "./blocks/VideoBlock";
+import ColumnsBlock from "./blocks/ColumnsBlock/ColumnsBlock";
+import TabsBlock from "./blocks/TabsBlock";
 
-export function BlockRenderer(props: BlockViewProps) {
+/** Chọn component hiển thị tương ứng với loại khối. */
+export const BlockRenderer = (props: BlockViewProps) => {
   switch (props.block.kind) {
     case "hero": return <HeroBlock {...props} />;
     case "news": return <NewsBlock {...props} />;
@@ -24,4 +31,4 @@ export function BlockRenderer(props: BlockViewProps) {
     case "columns": return <ColumnsBlock {...props} />;
     default: return null;
   }
-}
+};

@@ -4,13 +4,17 @@ import { useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems } from "./types";
-import { BlockImage } from "./BlockImage";
-import { SectionHeading } from "./SectionHeading";
+import BlockImage from "./BlockImage";
+import SectionHeading from "./SectionHeading";
 import type { Article } from "@/lib/supabase";
 
-export function TabsBlock({ block, articles }: BlockViewProps) {
+/** Hiển thị bài viết theo từng tab nội dung. */
+const TabsBlock = ({ block, articles }: BlockViewProps) => {
   const variant = block.variant ?? "underline";
-  const tabLabels = block.items.length > 0 ? block.items.slice(0, 5) : ["Mới nhất", "Nổi bật", "Giáo dục", "Xã hội"];
+  const tabLabels =
+    block.items.length > 0
+      ? block.items.slice(0, 5)
+      : ["Mới nhất", "Nổi bật", "Giáo dục", "Xã hội"];
   const [activeTab, setActiveTab] = useState(0);
 
   const getTabArticles = (i: number): Article[] => {
@@ -24,7 +28,10 @@ export function TabsBlock({ block, articles }: BlockViewProps) {
   const navClass = variant === "pills" ? "tabs-nav tabs-nav-pills" : "tabs-nav";
 
   return (
-    <section id={block.id} className={`render-block content-section tabs-section accent-${block.accent}`}>
+    <section
+      id={block.id}
+      className={`render-block content-section tabs-section accent-${block.accent}`}
+    >
       <SectionHeading block={block} />
       {/* Tab bar */}
       <div className={navClass}>
@@ -68,11 +75,15 @@ export function TabsBlock({ block, articles }: BlockViewProps) {
                 </div>
                 <div className="tab-row-body">
                   <strong>{title}</strong>
-                  <span className="card-meta">TIN TỨC <span>·</span> Dữ liệu mẫu</span>
+                  <span className="card-meta">
+                    TIN TỨC <span>·</span> Dữ liệu mẫu
+                  </span>
                 </div>
               </article>
             ))}
       </div>
     </section>
   );
-}
+};
+
+export default TabsBlock;

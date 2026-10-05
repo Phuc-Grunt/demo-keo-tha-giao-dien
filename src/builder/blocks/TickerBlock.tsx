@@ -2,7 +2,8 @@ import { Rss } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems } from "./types";
 
-export function TickerBlock({ block, articles }: BlockViewProps) {
+/** Hiển thị dải tin chạy liên tục. */
+const TickerBlock = ({ block, articles }: BlockViewProps) => {
   const items = articles?.map((a) => a.title) ?? fallbackItems(block);
   // Nhân đôi 3 lần để animation không bị gián đoạn
   const repeated = [...items, ...items, ...items];
@@ -24,4 +25,6 @@ export function TickerBlock({ block, articles }: BlockViewProps) {
       </div>
     </div>
   );
-}
+};
+
+export default TickerBlock;

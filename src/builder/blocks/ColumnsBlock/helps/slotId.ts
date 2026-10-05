@@ -1,0 +1,1 @@
+export const slotId = (parentId: string, colIdx: number) => `slot:${parentId}:${colIdx}`;

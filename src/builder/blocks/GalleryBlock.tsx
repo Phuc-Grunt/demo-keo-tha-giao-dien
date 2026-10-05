@@ -1,9 +1,10 @@
 import { Image as ImageIcon } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
-import { SectionHeading } from "./SectionHeading";
+import SectionHeading from "./SectionHeading";
 import BlockImage from "./BlockImage";
 
+/** Hiển thị thư viện ảnh của khối. */
 const GalleryBlock = ({ block, entries }: BlockViewProps) => {
   const images =
     entries?.map((entry) => ({
