@@ -1,66 +1,68 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# Next.js Agent Rules
+# Quy tắc dành cho tác nhân Next.js
 
-## Next.js version
+## Phiên bản Next.js
 
-**This is NOT the Next.js version you may already know.**
+**Đây có thể KHÔNG PHẢI phiên bản Next.js mà bạn đã biết.**
 
-This project may use a Next.js version with breaking changes to APIs, conventions, configuration, and file structure.
+Dự án này có thể dùng phiên bản Next.js có thay đổi không tương thích về API, quy ước, cấu hình và cấu trúc tệp.
 
-Before writing or modifying Next.js code:
+Trước khi viết hoặc sửa mã liên quan đến Next.js:
 
-- Read the relevant documentation inside `node_modules/next/dist/docs/`.
-- Resolve the documentation path relative to this project.
-- In a monorepo, the `next` package may not be installed at the repository root, so locate the correct package first.
-- Follow deprecation notices and the documentation bundled with the installed Next.js version instead of relying only on previously learned Next.js conventions.
+- Đọc tài liệu liên quan trong `node_modules/next/dist/docs/`.
+- Xác định đường dẫn tài liệu tương đối với dự án này.
+- Trong monorepo, gói `next` có thể không nằm ở thư mục gốc của kho mã; hãy tìm đúng vị trí gói trước.
+- Tuân theo các thông báo về tính năng không còn được khuyến nghị và tài liệu đi kèm phiên bản Next.js đã cài đặt, thay vì chỉ dựa vào những quy ước Next.js đã biết trước đây.
 
-This block is automatically generated and may be re-added by `next dev`.
+Khối nội dung này được tạo tự động và có thể được `next dev` thêm lại.
 
-Implementation reference:
+Vị trí mã triển khai tham chiếu:
 
 `node_modules/next/dist/server/lib/generate-agent-files.js`
 
-Do not remove this block just to clean up a Git diff. If removed, `next dev` may recreate it and cause an uncommitted change again.
+Không xóa khối này chỉ để làm gọn Git diff. Nếu bị xóa, `next dev` có thể tạo lại và khiến kho mã xuất hiện thay đổi chưa được commit.
 
 ---
 
-# Repository Instructions - phucnh
+# Hướng dẫn của kho mã - phucnh
 
-## 1. General code requirements
+## 1. Yêu cầu chung đối với mã nguồn
 
-### Comments
+### Chú thích
 
-When creating or modifying code:
+Khi tạo hoặc sửa mã nguồn:
 
-- Every component must include a short comment explaining its purpose.
-- Important functions and methods must include comments explaining what they do.
-- Comments should focus on purpose, business logic, or intent rather than simply repeating the code syntax.
-- Complex logic, business rules, and special conditions should include comments explaining why the logic exists.
+- Mỗi component phải có chú thích ngắn giải thích mục đích của nó.
+- Các hàm và phương thức quan trọng phải có chú thích giải thích chức năng của chúng.
+- Chú thích nên tập trung vào mục đích, nghiệp vụ hoặc ý định, thay vì chỉ diễn đạt lại cú pháp mã.
+- Logic phức tạp, quy tắc nghiệp vụ và điều kiện đặc biệt cần có chú thích giải thích lý do tồn tại.
 
-TypeScript example:
+Ví dụ TypeScript:
 
 ```ts
 /**
- * Displays the article list and allows the user to select an article for editing.
+ * Hiển thị danh sách bài viết và cho phép chọn bài viết để chỉnh sửa.
  */
-export function ArticleList() {
+const ArticleList = () => {
     // ...
-}
+};
+
+export default ArticleList;
 
 /**
- * Retrieves article information by ID.
+ * Lấy thông tin bài viết theo mã định danh.
  */
 async function getArticleById(id: string): Promise<ArticleDto> {
     // ...
 }
 ```
 
-C# example:
+Ví dụ C#:
 
 ```csharp
 /// <summary>
-/// Retrieves article information by ID.
+/// Lấy thông tin bài viết theo mã định danh.
 /// </summary>
 public async Task<ArticleDto> GetArticleAsync(Guid id)
 {
@@ -68,13 +70,19 @@ public async Task<ArticleDto> GetArticleAsync(Guid id)
 }
 ```
 
+### Quy ước component trong tệp TSX
+
+- Khai báo React component bằng `const ComponentName = (props: ComponentNameProps) => { ... };`. Có thể dùng named export hoặc default export tùy cách các nơi khác đang import; không khai báo component bằng `function ComponentName`.
+- Nếu một tệp `.tsx` chứa nhiều phần giao diện độc lập hoặc nhiều hàm chuyên trả về JSX, hãy tách chúng thành các component riêng, mỗi component ở một tệp phù hợp với thư mục của tính năng. Component cha giữ trách nhiệm ghép bố cục và điều phối dữ liệu.
+- Hàm xử lý sự kiện, chuyển đổi dữ liệu hoặc tính toán không phải component. Chỉ chuyển chúng thành component khi chúng thực sự chịu trách nhiệm hiển thị giao diện.
+
 ---
 
-## 2. Build, test, and verification
+## 2. Biên dịch, kiểm thử và xác minh
 
-After modifying code, **do not automatically run any build, test, lint, or type-check command** unless the user explicitly requests it.
+Sau khi sửa mã, **không tự động chạy lệnh build, test, lint hoặc kiểm tra kiểu** trừ khi người dùng yêu cầu rõ ràng.
 
-This includes, but is not limited to:
+Quy định này bao gồm nhưng không giới hạn ở:
 
 - `dotnet build`
 - `dotnet test`
@@ -88,30 +96,30 @@ This includes, but is not limited to:
 - `ng build`
 - `tsc`
 - `tsc --noEmit`
-- Any other command that may trigger compilation, build, linting, testing, or type checking
+- Mọi lệnh khác có thể kích hoạt biên dịch, build, lint, kiểm thử hoặc kiểm tra kiểu
 
-Compilation and build verification must be left to the user.
+Việc biên dịch và xác minh bản build do người dùng thực hiện.
 
-After completing code changes, the final summary must clearly state:
+Sau khi hoàn tất thay đổi mã, phần tóm tắt cuối cùng phải nêu rõ:
 
-> Build/test/lint/type-check commands were not run according to the repository instructions.
+> Không chạy các lệnh build/test/lint/kiểm tra kiểu theo hướng dẫn của kho mã.
 
-Do not run a build simply to verify whether the modified code compiles unless the user explicitly asks for it.
+Không chạy build chỉ để kiểm tra mã vừa sửa có biên dịch được hay không, trừ khi người dùng yêu cầu rõ ràng.
 
 ---
 
-## 3. C# backend
+## 3. Backend C#
 
-When modifying C# backend code:
+Khi sửa mã backend C#:
 
-- Do not run `dotnet build`.
-- Do not run `dotnet test`.
-- Do not run commands that may trigger a backend build.
-- Leave compilation and build verification to the user.
-- Prefer dependency injection through interfaces whenever an interface already exists.
-- Do not inject concrete implementations when an appropriate contract or interface is available.
+- Không chạy `dotnet build`.
+- Không chạy `dotnet test`.
+- Không chạy lệnh có thể kích hoạt build backend.
+- Để người dùng tự biên dịch và xác minh bản build.
+- Ưu tiên tiêm phụ thuộc qua interface khi đã có interface phù hợp.
+- Không tiêm lớp triển khai cụ thể khi đã có interface hoặc hợp đồng phù hợp.
 
-Preferred:
+Nên dùng:
 
 ```csharp
 private readonly IArticleRepository _articleRepository;
@@ -122,49 +130,49 @@ public ArticleAppService(IArticleRepository articleRepository)
 }
 ```
 
-Avoid:
+Tránh dùng:
 
 ```csharp
 private readonly ArticleRepository _articleRepository;
 ```
 
-unless the framework or project architecture specifically requires the concrete implementation.
+Trừ khi framework hoặc kiến trúc dự án yêu cầu rõ ràng phải dùng lớp triển khai cụ thể.
 
-DTOs, entities, value objects, and implementation classes may remain classes where appropriate.
+DTO, entity, value object và lớp triển khai vẫn có thể là class khi phù hợp.
 
 ---
 
-## 4. TypeScript strong typing
+## 4. Kiểu dữ liệu chặt chẽ trong TypeScript
 
-All new or modified TypeScript code must remain strongly typed.
+Toàn bộ mã TypeScript mới hoặc được sửa phải giữ kiểu dữ liệu chặt chẽ.
 
-### Do not use
+### Không sử dụng
 
 - `any`
-- `unknown` as a way to bypass proper typing
+- `unknown` để né tránh việc khai báo kiểu phù hợp
 - `as any`
 - `as unknown`
-- Unsafe chained casts
+- Các phép ép kiểu nối tiếp không an toàn
 - `@ts-ignore`
-- Similar type-check suppression techniques
+- Các cách tương tự nhằm bỏ qua kiểm tra kiểu
 
-### Define and use named interfaces or types for
+### Định nghĩa và sử dụng interface hoặc type có tên cho
 
-- Component props
-- Component state
-- API requests
-- API responses
-- Payloads
-- Callbacks
-- Service results
-- Object shapes
-- Form models
-- Store state
-- Store actions
+- Props của component
+- State của component
+- Yêu cầu API
+- Phản hồi API
+- Payload
+- Callback
+- Kết quả của service
+- Cấu trúc object
+- Dữ liệu biểu mẫu
+- State của store
+- Action của store
 
-Prefer existing generated DTOs, proxy interfaces, or existing project types before creating new ones.
+Ưu tiên dùng DTO được tạo sẵn, interface của proxy hoặc kiểu dữ liệu hiện có trong dự án trước khi tạo kiểu mới.
 
-Example:
+Ví dụ:
 
 ```ts
 interface ArticleListProps {
@@ -179,7 +187,7 @@ interface ArticleResponse {
 }
 ```
 
-Do not write:
+Không viết:
 
 ```ts
 function handleArticle(data: any) {
@@ -189,63 +197,63 @@ function handleArticle(data: any) {
 
 ---
 
-## 5. Documentation language
+## 5. Ngôn ngữ tài liệu
 
-When creating or updating:
+Khi tạo hoặc cập nhật:
 
-- Markdown files
-- README files
-- Technical documentation
-- User guides
-- Business documentation
-- Long-form business logic comments
-- Repository instructions or guides
+- Tệp Markdown
+- Tệp README
+- Tài liệu kỹ thuật
+- Hướng dẫn sử dụng
+- Tài liệu nghiệp vụ
+- Chú thích dài về logic nghiệp vụ
+- Hướng dẫn hoặc quy định của kho mã
 
-use **Vietnamese with proper diacritics**, unless the user explicitly requests another language.
+hãy dùng **tiếng Việt có dấu đầy đủ**, trừ khi người dùng yêu cầu rõ ràng ngôn ngữ khác.
 
-The following should continue following the existing source-code naming conventions:
+Các mục sau vẫn phải tuân theo quy ước đặt tên hiện có của mã nguồn:
 
-- Classes
-- Functions
-- Variables
-- Interfaces
-- Types
-- APIs
-- Database fields
-
----
-
-## 6. Rules when modifying code
-
-When handling a code modification request:
-
-1. Read the existing code and relevant project structure before making changes.
-2. For Next.js-related changes, check the relevant documentation in `node_modules/next/dist/docs/` when the task involves Next.js APIs, conventions, routing, rendering, caching, configuration, or project structure.
-3. Reuse existing components, hooks, services, DTOs, interfaces, and utilities whenever appropriate.
-4. Do not introduce unnecessary abstractions.
-5. Do not modify unrelated logic outside the requested scope unless it is necessary for the requested change.
-6. Preserve the existing coding conventions and architectural style of the project.
-7. Add comments to components and important functions or methods.
-8. Maintain strong typing.
-9. Do not automatically run build, test, lint, or type-check commands.
-10. After completing the task, provide a concise summary containing:
-    - What was changed.
-    - Which files were modified.
-    - How the main logic changed.
-    - Confirmation that build/test/lint/type-check commands were not run.
+- Class
+- Hàm
+- Biến
+- Interface
+- Type
+- API
+- Trường dữ liệu trong cơ sở dữ liệu
 
 ---
 
-## 7. Priority rules
+## 6. Quy tắc khi sửa mã
 
-If there is a conflict between:
+Khi xử lý yêu cầu sửa mã:
 
-- previously learned Next.js knowledge,
-- common Next.js conventions,
-- and the documentation bundled with the installed Next.js version,
+1. Đọc mã hiện có và cấu trúc dự án liên quan trước khi thay đổi.
+2. Với thay đổi liên quan đến Next.js, kiểm tra tài liệu phù hợp trong `node_modules/next/dist/docs/` nếu công việc đụng đến API, quy ước, định tuyến, kết xuất, bộ nhớ đệm, cấu hình hoặc cấu trúc dự án của Next.js.
+3. Tái sử dụng component, hook, service, DTO, interface và utility hiện có khi phù hợp.
+4. Không tạo thêm lớp trừu tượng không cần thiết.
+5. Không sửa logic không liên quan ngoài phạm vi yêu cầu, trừ khi cần thiết để hoàn thành thay đổi.
+6. Giữ nguyên quy ước viết mã và phong cách kiến trúc hiện có của dự án.
+7. Thêm chú thích cho component và các hàm hoặc phương thức quan trọng.
+8. Giữ kiểu dữ liệu chặt chẽ.
+9. Không tự động chạy lệnh build, test, lint hoặc kiểm tra kiểu.
+10. Sau khi hoàn thành, cung cấp phần tóm tắt ngắn gọn gồm:
+    - Nội dung đã thay đổi.
+    - Những tệp đã sửa.
+    - Cách logic chính thay đổi.
+    - Xác nhận không chạy lệnh build/test/lint/kiểm tra kiểu.
 
-the documentation inside `node_modules/next/dist/docs/` for the current project takes priority.
+---
 
-If there is a conflict between common implementation practices and these repository instructions, these repository instructions take priority.
+## 7. Thứ tự ưu tiên
+
+Nếu có mâu thuẫn giữa:
+
+- kiến thức Next.js đã biết trước đây,
+- các quy ước Next.js phổ biến,
+- và tài liệu đi kèm phiên bản Next.js đã cài đặt,
+
+thì ưu tiên tài liệu trong `node_modules/next/dist/docs/` của dự án hiện tại.
+
+Nếu có mâu thuẫn giữa cách triển khai thông thường và hướng dẫn của kho mã này, hãy ưu tiên hướng dẫn của kho mã.
 
 <!-- END:nextjs-agent-rules -->

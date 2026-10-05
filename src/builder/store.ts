@@ -116,12 +116,15 @@ export const useBuilderStore = create<BuilderState>()(
           const blocks = structuredClone(state.document.blocks);
           
           type NodeLocation = { arr: BuilderBlock[]; index: number; block: BuilderBlock };
+          /** Tìm block và mảng chứa nó, kể cả trong các cột lồng nhau. */
           function findLocation(arr: BuilderBlock[], id: string): NodeLocation | null {
             for (let i = 0; i < arr.length; i++) {
-              if (arr[i].id === id) return { arr, index: i, block: arr[i] };
-              if (arr[i].slots) {
-                for (let c = 0; c < arr[i].slots.length; c++) {
-                  const f = findLocation(arr[i].slots[c], id);
+              const block = arr[i];
+              if (block.id === id) return { arr, index: i, block };
+              const slots = block.slots;
+              if (slots) {
+                for (let c = 0; c < slots.length; c++) {
+                  const f = findLocation(slots[c], id);
                   if (f) return f;
                 }
               }

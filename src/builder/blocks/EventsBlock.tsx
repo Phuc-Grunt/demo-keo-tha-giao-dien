@@ -1,13 +1,14 @@
 import { Calendar, MapPin } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
-import { SectionHeading } from "./SectionHeading";
+import SectionHeading from "./SectionHeading";
 
 const MONTHS = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
 
 type EItem = { id: string; title: string; date: Date; cat: string };
 
-export function EventsBlock({ block, articles }: BlockViewProps) {
+/** Hiển thị sự kiện dưới dạng thẻ hoặc dòng thời gian. */
+const EventsBlock = ({ block, articles }: BlockViewProps) => {
   const variant = block.variant ?? "timeline";
   const items: EItem[] = articles && articles.length > 0
     ? articles.map((a, i) => ({
@@ -74,4 +75,6 @@ export function EventsBlock({ block, articles }: BlockViewProps) {
       </div>
     </section>
   );
-}
+};
+
+export default EventsBlock;
