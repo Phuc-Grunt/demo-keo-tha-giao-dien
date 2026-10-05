@@ -16,5 +16,12 @@ export function BlockRenderer(props: BlockViewProps) {
     case "links": return <LinksBlock {...props} />;
     case "text": return <TextBlock {...props} />;
     case "gallery": return <GalleryBlock {...props} />;
+    case "ticker": return <TickerBlock {...props} />;
+    case "featured": return <FeaturedBlock {...props} />;
+    case "video": return <VideoBlock {...props} />;
+    case "events": return <EventsBlock {...props} />;
+    case "tabs": return <TabsBlock {...props} />;
+    case "columns": return <ColumnsBlock {...props} />;
+    default: return null;
   }
 }
