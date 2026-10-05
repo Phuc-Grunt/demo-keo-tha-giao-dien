@@ -1,19 +1,19 @@
 import type { CSSProperties } from "react";
 import type { BlockViewProps } from "./blocks/types";
 import { sanitizeColor, type BuilderBlock, type TextStyleTarget } from "./model";
-import { HeroBlock } from "./blocks/HeroBlock";
-import { NewsBlock } from "./blocks/NewsBlock";
-import { NoticeBlock } from "./blocks/NoticeBlock";
-import { StatsBlock } from "./blocks/StatsBlock";
-import { LinksBlock } from "./blocks/LinksBlock";
-import { TextBlock } from "./blocks/TextBlock";
-import { GalleryBlock } from "./blocks/GalleryBlock";
-import { TickerBlock } from "./blocks/TickerBlock";
-import { FeaturedBlock } from "./blocks/FeaturedBlock";
-import { VideoBlock } from "./blocks/VideoBlock";
-import { EventsBlock } from "./blocks/EventsBlock";
-import { TabsBlock } from "./blocks/TabsBlock";
-import { ColumnsBlock } from "./blocks/ColumnsBlock";
+import HeroBlock from "./blocks/HeroBlock";
+import NewsBlock from "./blocks/NewsBlock";
+import NoticeBlock from "./blocks/NoticeBlock";
+import StatsBlock from "./blocks/StatsBlock";
+import LinksBlock from "./blocks/LinksBlock";
+import TextBlock from "./blocks/TextBlock";
+import GalleryBlock from "./blocks/GalleryBlock";
+import TickerBlock from "./blocks/TickerBlock";
+import FeaturedBlock from "./blocks/FeaturedBlock";
+import VideoBlock from "./blocks/VideoBlock";
+import EventsBlock from "./blocks/EventsBlock";
+import TabsBlock from "./blocks/TabsBlock";
+import ColumnsBlock from "./blocks/ColumnsBlock/ColumnsBlock";
 
 const textTargets: TextStyleTarget[] = ["eyebrow", "title", "description"];
 
