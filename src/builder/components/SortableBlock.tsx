@@ -43,7 +43,8 @@ const SortableBlock = ({
       ref={setNodeRef}
       className={`editor-block ${selected ? "selected" : ""} ${isDragging ? "is-dragging" : ""}`}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         select(block.id);
         onSelect();
       }}
