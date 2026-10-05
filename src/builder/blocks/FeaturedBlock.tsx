@@ -25,12 +25,20 @@ const FeaturedBlock = ({ block, articles }: BlockViewProps) => {
   const variant = block.variant ?? "classic";
   const items: SimpleItem[] = articles && articles.length > 0
     ? toSimple(articles)
-    : fallbackItems(block).map((t, i) => ({ id: String(i), title: t, date: "Dữ liệu mẫu", cat: "Tin nổi bật", img: null }));
+    : fallbackItems(block).map((t, i) => ({ id: String(i), title: t, date: "Dữ liệu mẫu", cat: "Tin nổi bật", img: block.content.items[i]?.imageUrl ?? null }));
+
+  const isAuto = block.behavior?.slideshow?.autoplay;
+  const [activeIndex, setActiveIndex] = useState(0);
+  useEffect(() => {
+    if (variant === "grid" || !isAuto || items.length === 0) return;
+    const timer = setInterval(() => setActiveIndex((previous) => (previous + 1) % Math.min(items.length, 5)), block.behavior?.slideshow?.intervalMs ?? 3000);
+    return () => clearInterval(timer);
+  }, [variant, isAuto, block.behavior?.slideshow?.intervalMs, items.length]);
 
   /* ────── GRID variant ────── */
   if (variant === "grid") {
     return (
-      <section id={block.id} className={`render-block content-section featured-section accent-${block.accent}`}>
+      <section id={block.id} className={`render-block content-section featured-section accent-${block.theme.accent}`}>
         <SectionHeading block={block} showViewAll />
         <div className="featured-grid" style={gridColumnsStyle(block)}>
           {items.map((item, i) => (
@@ -55,24 +63,12 @@ const FeaturedBlock = ({ block, articles }: BlockViewProps) => {
   }
 
   /* ────── CLASSIC variant (default) ────── */
-  const isAuto = block.autoSlide;
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    if (!isAuto || items.length === 0) return;
-    const interval = block.slideInterval ?? 3;
-    const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % Math.min(items.length, 5));
-    }, interval * 1000);
-    return () => clearInterval(timer);
-  }, [isAuto, block.slideInterval, items.length]);
-
-  const mainIndex = isAuto ? activeIndex : 0;
+  const mainIndex = isAuto && items.length ? activeIndex % Math.min(items.length, 5) : 0;
   const main = items[mainIndex] ?? { id: "0", title: "Tiêu đề tin chính", date: "Dữ liệu mẫu", cat: "Tin nổi bật", img: null };
   const side = isAuto ? items.slice(0, 5) : items.slice(1, 6);
 
   return (
-    <section id={block.id} className={`render-block content-section featured-section accent-${block.accent}`}>
+    <section id={block.id} className={`render-block content-section featured-section accent-${block.theme.accent}`}>
       <SectionHeading block={block} showViewAll />
       <div className="featured-classic">
         {/* Tin chính – ảnh phủ toàn */}

@@ -2,6 +2,12 @@
 
 Next.js, TypeScript và React. Trang biên tập ở `/`; trang đã xuất bản ở `/site`.
 
+## JSON v2 và HTML Editor
+
+Tài liệu builder được chuẩn hóa sang JSON v2, tách nội dung, nguồn dữ liệu, bố cục, style, theme và hành vi. JSON v1 được chuyển tự động khi nhập, đọc DB hoặc khôi phục bản nháp cục bộ.
+
+Nút **HTML Editor** mở màn sửa HTML với preview trực tiếp ở cột bên cạnh. HTML template có marker được chuyển về JSON v2 khi nhấn **Áp dụng vào builder**. Xem cấu trúc, giới hạn và hướng dẫn ở [JSON chuẩn và trình biên tập HTML](docs/builder-html.md).
+
 ## Giao diện Tailwind CSS và shadcn/ui
 
 - Tailwind CSS 4 được nạp từ `src/app/globals.css` qua PostCSS. CSS hiện có trong `portal.css` và `workspace.css` vẫn áp dụng cho giao diện cũ.

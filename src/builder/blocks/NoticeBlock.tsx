@@ -10,7 +10,7 @@ const NoticeBlock = ({ block, articles }: BlockViewProps) => {
   return (
     <section
       id={block.id}
-      className={`render-block content-section notice-section accent-${block.accent}`}
+      className={`render-block content-section notice-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} showViewAll />
       <div className="notice-list">

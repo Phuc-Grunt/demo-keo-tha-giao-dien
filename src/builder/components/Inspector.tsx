@@ -1,7 +1,8 @@
 import { Check, ChevronDown, CircleHelp, Copy, MoreHorizontal, Settings2, Trash2, X } from "lucide-react";
 import type { Category } from "@/lib/supabase";
-import { blockCatalog, getBlockSource, findBlock, DEFAULT_PAGE_WIDTH } from "../model";
+import { blockCatalog, getBlockSource, findBlock, getPageWidth, itemsFromStrings } from "../model";
 import type { TextStyle, TextStyleTarget, BuilderBlock } from "../model";
+import { itemStrings } from "../blocks/types";
 import { useBuilderStore } from "../store";
 import { ColorPalette, PageWidthControl, TextStyleControls, defaultAccentColors, FontPicker } from "../InspectorControls";
 import paletteIcons from "./paletteIcons";
@@ -28,16 +29,19 @@ const Inspector = ({
     selectedId ? findBlock(state.document.blocks, selectedId) : undefined
   );
   const update = useBuilderStore((state) => state.update);
+  const updateContent = useBuilderStore((state) => state.updateContent);
+  const updateTheme = useBuilderStore((state) => state.updateTheme);
+  const updateSource = useBuilderStore((state) => state.updateSource);
   const remove = useBuilderStore((state) => state.remove);
   const duplicate = useBuilderStore((state) => state.duplicate);
   const setSlotCount = useBuilderStore((state) => state.setSlotCount);
-  const name = useBuilderStore((state) => state.document.name);
+  const name = useBuilderStore((state) => state.document.meta.name);
   const rename = useBuilderStore((state) => state.rename);
-  const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
+  const pageWidth = useBuilderStore((state) => getPageWidth(state.document));
   const setPageWidth = useBuilderStore((state) => state.setPageWidth);
-  const themeColor = useBuilderStore((state) => state.document.themeColor);
+  const themeColor = useBuilderStore((state) => state.document.theme.primaryColor);
   const setThemeColor = useBuilderStore((state) => state.setThemeColor);
-  const themeFont = useBuilderStore((state) => state.document.themeFont);
+  const themeFont = useBuilderStore((state) => state.document.theme.fontFamily);
   const setThemeFont = useBuilderStore((state) => state.setThemeFont);
 
   if (!block)
@@ -114,8 +118,7 @@ const Inspector = ({
     );
 
   const hasItems =
-    ["news", "notice", "stats", "links", "gallery"].includes(block.kind) &&
-    !block.dataSource;
+    ["news", "notice", "stats", "links", "gallery", "featured", "ticker", "video", "events"].includes(block.kind);
   // tabs block dùng items làm tên tab
   const hasTabItems = block.kind === "tabs";
   const isColumnsBlock = block.kind === "columns";
@@ -136,10 +139,10 @@ const Inspector = ({
 
   /** Chọn màu nhấn; nếu trùng 3 màu mặc định thì quay lại màu nhấn có sẵn. */
   function selectAccentColor(color: string) {
-    const preset = (Object.keys(defaultAccentColors) as BuilderBlock["accent"][]).find(
+    const preset = (Object.keys(defaultAccentColors) as BuilderBlock["theme"]["accent"][]).find(
       (key) => defaultAccentColors[key].toLowerCase() === color.toLowerCase(),
     );
-    update(block!.id, preset ? { accent: preset, accentColor: undefined } : { accentColor: color });
+    updateTheme(block!.id, preset ? { accent: preset, accentColor: undefined } : { accentColor: color });
   }
 
   // Variant & columns
@@ -217,10 +220,10 @@ const Inspector = ({
             <input
               id="eyebrow"
               className="field-input"
-              value={block.eyebrow}
+              value={block.content.eyebrow}
               maxLength={100}
               onChange={(event) =>
-                update(block.id, { eyebrow: event.target.value })
+                updateContent(block.id, { eyebrow: event.target.value })
               }
             />
             <TextStyleControls
@@ -234,10 +237,10 @@ const Inspector = ({
             <input
               id="title"
               className="field-input"
-              value={block.title}
+              value={block.content.title}
               maxLength={200}
               onChange={(event) =>
-                update(block.id, { title: event.target.value })
+                updateContent(block.id, { title: event.target.value })
               }
             />
             <TextStyleControls
@@ -251,10 +254,10 @@ const Inspector = ({
             <textarea
               id="description"
               className="field-input field-textarea"
-              value={block.description}
+              value={block.content.description}
               maxLength={1000}
               onChange={(event) =>
-                update(block.id, { description: event.target.value })
+                updateContent(block.id, { description: event.target.value })
               }
               rows={4}
             />
@@ -271,10 +274,9 @@ const Inspector = ({
                 <textarea
                   id="items"
                   className="field-input field-textarea items-textarea"
-                  value={block.items.join("\n")}
+                  value={itemStrings(block).join("\n")}
                   onChange={(event) =>
-                    update(block.id, {
-                      items: event.target.value.split("\n").slice(0, 8),
+                    updateContent(block.id, { items: itemsFromStrings(block.kind, block.id, event.target.value.split("\n").slice(0, 12), block.content.items),
                     })
                   }
                   rows={5}
@@ -291,8 +293,8 @@ const Inspector = ({
                   className="field-input"
                   type="text"
                   placeholder="https://..."
-                  value={block.imageUrl || ""}
-                  onChange={(event) => update(block.id, { imageUrl: event.target.value })}
+                  value={block.content.imageUrl || ""}
+                  onChange={(event) => updateContent(block.id, { imageUrl: event.target.value })}
                 />
                 <label className="field-label" htmlFor="imageUpload">
                   Tải ảnh lên (Từ máy tính)
@@ -308,7 +310,7 @@ const Inspector = ({
                       const reader = new FileReader();
                       reader.onload = (ev) => {
                         if (ev.target?.result) {
-                          update(block.id, { imageUrl: ev.target.result as string });
+                          updateContent(block.id, { imageUrl: ev.target.result as string });
                         }
                       };
                       reader.readAsDataURL(file);
@@ -333,7 +335,7 @@ const Inspector = ({
                 <button
                   key={n}
                   id={`col-count-${n}`}
-                  className={`col-count-btn${(block.dataSource?.columns ?? 2) === n ? " active" : ""}`}
+                  className={`col-count-btn${(source.columns ?? 2) === n ? " active" : ""}`}
                   onClick={() => setSlotCount(block.id, n)}
                 >
                   {n}
@@ -347,8 +349,8 @@ const Inspector = ({
               id="col-gap"
               className="field-input"
               type="number"
-              value={block.dataSource?.gap ?? 16}
-              onChange={(e) => update(block.id, { dataSource: { ...source, gap: Number(e.target.value) } })}
+              value={source.gap ?? 16}
+              onChange={(e) => updateSource(block.id, { ...source, gap: Number(e.target.value) })}
             />
 
             <label className="field-label" htmlFor="col-ratio">
@@ -359,8 +361,8 @@ const Inspector = ({
               className="field-input"
               type="text"
               placeholder="VD: 1fr 1fr"
-              value={block.dataSource?.gridTemplate || ""}
-              onChange={(e) => update(block.id, { dataSource: { ...source, gridTemplate: e.target.value } })}
+              value={source.gridTemplate || ""}
+              onChange={(e) => updateSource(block.id, { ...source, gridTemplate: e.target.value })}
             />
 
             <label className="field-label" htmlFor="col-padding">
@@ -370,8 +372,8 @@ const Inspector = ({
               id="col-padding"
               className="field-input"
               type="number"
-              value={block.dataSource?.padding ?? 0}
-              onChange={(e) => update(block.id, { dataSource: { ...source, padding: Number(e.target.value) } })}
+              value={source.padding ?? 0}
+              onChange={(e) => updateSource(block.id, { ...source, padding: Number(e.target.value) })}
             />
 
             <label className="field-label" htmlFor="col-bg">
@@ -379,8 +381,8 @@ const Inspector = ({
             </label>
             <ColorPalette
               id="col-bg"
-              value={block.dataSource?.backgroundColor || ""}
-              onChange={(color) => update(block.id, { dataSource: { ...source, backgroundColor: color } })}
+              value={source.backgroundColor || ""}
+              onChange={(color) => updateSource(block.id, { ...source, backgroundColor: color })}
             />
           </div>
         )}
@@ -404,9 +406,7 @@ const Inspector = ({
                 className="field-input"
                 value={source.categorySlug}
                 onChange={(event) =>
-                  update(block.id, {
-                    dataSource: { ...source, categorySlug: event.target.value },
-                  })
+                  updateSource(block.id, { ...source, categorySlug: event.target.value })
                 }
               >
                 <option value="">Tất cả chuyên mục</option>
@@ -424,12 +424,10 @@ const Inspector = ({
                 className="field-input"
                 value={source.mode}
                 onChange={(event) =>
-                  update(block.id, {
-                    dataSource: {
+                  updateSource(block.id, {
                       ...source,
                       mode: event.target.value as "latest" | "hot",
-                    },
-                  })
+                    })
                 }
               >
                 <option value="latest">Mới nhất</option>
@@ -445,10 +443,9 @@ const Inspector = ({
               <textarea
                 id="tab-names"
                 className="field-input field-textarea"
-                value={block.items.join("\n")}
+                value={itemStrings(block).join("\n")}
                 onChange={(event) =>
-                  update(block.id, {
-                    items: event.target.value.split("\n").slice(0, 4),
+                  updateContent(block.id, { items: itemsFromStrings(block.kind, block.id, event.target.value.split("\n").slice(0, 4), block.content.items),
                   })
                 }
                 rows={4}
@@ -468,15 +465,13 @@ const Inspector = ({
                 max={12}
                 value={source.limit}
                 onChange={(event) =>
-                  update(block.id, {
-                    dataSource: {
+                  updateSource(block.id, {
                       ...source,
                       limit: Math.min(
                         12,
                         Math.max(1, Number(event.target.value) || 1),
                       ),
-                    },
-                  })
+                    })
                 }
               />
             </>
@@ -491,12 +486,10 @@ const Inspector = ({
                 className="field-input"
                 value={source.columns ?? 3}
                 onChange={(event) =>
-                  update(block.id, {
-                    dataSource: {
+                  updateSource(block.id, {
                       ...source,
                       columns: Number(event.target.value),
-                    },
-                  })
+                    })
                 }
               >
                 {[1, 2, 3, 4].map((number) => (
@@ -538,12 +531,12 @@ const Inspector = ({
                 <label className="field-label" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: "normal" }}>
                   <input
                     type="checkbox"
-                    checked={block.autoSlide || false}
-                    onChange={(e) => update(block.id, { autoSlide: e.target.checked, slideInterval: block.slideInterval ?? 3 })}
+                    checked={block.behavior?.slideshow?.autoplay ?? false}
+                    onChange={(e) => update(block.id, { behavior: { ...block.behavior, slideshow: { autoplay: e.target.checked, intervalMs: block.behavior?.slideshow?.intervalMs ?? 3000 } } })}
                   />
                   Sử dụng chuyển tin (Slideshow)
                 </label>
-                {block.autoSlide && (
+                {block.behavior?.slideshow?.autoplay && (
                   <div style={{ marginTop: 8 }}>
                     <label className="field-label" htmlFor="slide-interval">
                       Thời gian hiển thị (giây)
@@ -554,8 +547,8 @@ const Inspector = ({
                       type="number"
                       min={1}
                       max={30}
-                      value={block.slideInterval ?? 3}
-                      onChange={(e) => update(block.id, { slideInterval: Number(e.target.value) })}
+                      value={(block.behavior?.slideshow?.intervalMs ?? 3000) / 1000}
+                      onChange={(e) => update(block.id, { behavior: { ...block.behavior, slideshow: { autoplay: block.behavior?.slideshow?.autoplay ?? false, intervalMs: Math.min(30000, Math.max(1000, Number(e.target.value) * 1000)) } } })}
                     />
                   </div>
                 )}
@@ -564,7 +557,7 @@ const Inspector = ({
             <span className="field-label">Màu nhấn</span>
             <ColorPalette
               id="accent-color"
-              value={block.accentColor ?? defaultAccentColors[block.accent]}
+              value={block.theme.accentColor ?? defaultAccentColors[block.theme.accent]}
               onChange={selectAccentColor}
             />
             <label className="field-label" htmlFor="block-font">
@@ -572,8 +565,8 @@ const Inspector = ({
             </label>
             <FontPicker
               id="block-font"
-              value={block.fontFamily}
-              onChange={(font) => update(block.id, { fontFamily: font || undefined })}
+              value={block.theme.fontFamily}
+              onChange={(font) => updateTheme(block.id, { fontFamily: font || undefined })}
             />
           </div>
         )}

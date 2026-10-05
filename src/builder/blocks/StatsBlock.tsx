@@ -1,5 +1,6 @@
 import type { BlockViewProps } from "./types";
-import { fallbackItems, gridColumnsStyle } from "./types";
+import { gridColumnsStyle } from "./types";
+import { getBlockSource } from "../model";
 import SectionHeading from "./SectionHeading";
 
 /** Hiển thị các chỉ số thống kê của khối. */
@@ -10,18 +11,17 @@ const StatsBlock = ({ block, entries }: BlockViewProps) => {
       value: entry.metric_value || "—",
       label: entry.title,
     })) ??
-    fallbackItems(block).map((item, index) => {
-      const [value, label] = item.split("|");
+    block.content.items.slice(0, getBlockSource(block).limit).map((item) => {
       return {
-        id: String(index),
-        value: value || "—",
-        label: label || "Chỉ số",
+        id: item.id,
+        value: item.value || "—",
+        label: item.label || "Chỉ số",
       };
     });
   return (
     <section
       id={block.id}
-      className={`render-block stats-section accent-${block.accent}`}
+      className={`render-block stats-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} />
       <div className="stats-grid" style={gridColumnsStyle(block)}>

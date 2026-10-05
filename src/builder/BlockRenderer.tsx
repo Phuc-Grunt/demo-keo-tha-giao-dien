@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { BlockViewProps } from "./blocks/types";
-import { sanitizeColor, type BuilderBlock, type TextStyleTarget } from "./model";
+import { blockAppearanceCss } from "./appearance";
+import type { BuilderBlock } from "./model";
 import HeroBlock from "./blocks/HeroBlock";
 import NewsBlock from "./blocks/NewsBlock";
 import NoticeBlock from "./blocks/NoticeBlock";
@@ -14,8 +15,6 @@ import VideoBlock from "./blocks/VideoBlock";
 import EventsBlock from "./blocks/EventsBlock";
 import TabsBlock from "./blocks/TabsBlock";
 import ColumnsBlock from "./blocks/ColumnsBlock/ColumnsBlock";
-
-const textTargets: TextStyleTarget[] = ["eyebrow", "title", "description"];
 
 /** Style cho phép gán biến CSS tùy chỉnh (bắt đầu bằng "--"). */
 type CssVarStyle = CSSProperties & Record<`--${string}`, string>;
@@ -32,27 +31,16 @@ interface BlockStyleHooks {
 function blockStyleHooks(block: BuilderBlock): BlockStyleHooks {
   const classes = ["block-wrap"];
   const vars: CssVarStyle = {};
-  const accent = sanitizeColor(block.accentColor);
+  const accent = block.theme.accentColor;
   if (accent) {
     classes.push("has-accent-color");
     vars["--block-accent"] = accent;
   }
-  if (block.fontFamily) {
+  if (block.theme.fontFamily) {
     classes.push("has-custom-font");
-    vars["--theme-font"] = block.fontFamily;
+    vars["--theme-font"] = block.theme.fontFamily;
   }
-  for (const target of textTargets) {
-    const textStyle = block.textStyles?.[target];
-    if (textStyle?.size) {
-      classes.push(`has-${target}-size`);
-      vars[`--${target}-size`] = `${textStyle.size}px`;
-    }
-    const color = sanitizeColor(textStyle?.color);
-    if (color) {
-      classes.push(`has-${target}-color`);
-      vars[`--${target}-color`] = color;
-    }
-  }
+  // Kiểu chữ của field được sinh cùng responsive trong blockAppearanceCss.
   return { className: classes.join(" "), style: vars };
 }
 
@@ -75,5 +63,8 @@ export const BlockRenderer = (props: BlockViewProps) => {
     case "tabs": content = <TabsBlock {...props} />; break;
     case "columns": content = <ColumnsBlock {...props} />; break;
   }
-  return <div className={hooks.className} style={hooks.style}>{content}</div>;
+  return <div className={hooks.className} style={hooks.style} data-builder-block-id={props.block.id} data-builder-block-kind={props.block.kind}>
+    <style data-builder-managed-style>{blockAppearanceCss(props.block)}</style>
+    {content}
+  </div>;
 };

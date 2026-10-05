@@ -15,13 +15,13 @@ const GalleryBlock = ({ block, entries }: BlockViewProps) => {
     fallbackItems(block).map((title, index) => ({
       id: String(index),
       title,
-      src: null,
+      src: block.content.items[index]?.imageUrl ?? null,
     }));
 
   return (
     <section
       id={block.id}
-      className={`render-block content-section gallery-section accent-${block.accent}`}
+      className={`render-block content-section gallery-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} />
 

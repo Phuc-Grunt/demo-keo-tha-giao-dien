@@ -18,10 +18,10 @@ const SectionHeading = ({
   return (
     <div className="section-heading">
       <div>
-        <span className="eyebrow">{block.eyebrow}</span>
-        <h2>{title ?? block.title}</h2>
-        {(description ?? block.description) && (
-          <p>{description ?? block.description}</p>
+        <span className="eyebrow">{block.content.eyebrow}</span>
+        <h2>{title ?? block.content.title}</h2>
+        {(description ?? block.content.description) && (
+          <p>{description ?? block.content.description}</p>
         )}
       </div>
       {showViewAll && (

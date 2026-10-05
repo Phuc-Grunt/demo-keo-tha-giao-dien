@@ -1,12 +1,17 @@
 import { BookOpen } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import type { BuilderDocument } from "./model";
+import { pageAppearanceCss } from "./appearance";
 
-export function PortalChrome({ children, themeColor, themeFont }: { children: ReactNode; themeColor?: string; themeFont?: string }) {
-  const style: React.CSSProperties = {
-    ...(themeColor ? { "--theme-color": themeColor } : {}),
-    ...(themeFont ? { "--theme-font": themeFont } : {}),
-  } as React.CSSProperties;
-  return <div className="portal-page" style={Object.keys(style).length > 0 ? style : undefined}>
+interface PortalChromeProps { children: ReactNode; document: BuilderDocument }
+/** Ghép khung cổng thông tin và áp dụng theme/page từ cùng tài liệu chuẩn. */
+export const PortalChrome = ({ children, document }: PortalChromeProps) => {
+  const style: CSSProperties & Record<`--${string}`, string> = {
+    ...(document.theme.primaryColor ? { "--theme-color": document.theme.primaryColor } : {}),
+    ...(document.theme.fontFamily ? { "--theme-font": document.theme.fontFamily } : {}),
+  };
+  return <div className="portal-page" data-builder-page style={style}>
+    <style data-builder-managed-style>{pageAppearanceCss(document)}</style>
     <div className="portal-topline"><span>Thứ Ba, ngày 29 tháng 9 năm 2026</span><span>English <span className="topline-divider">|</span> Liên hệ</span></div>
     <div className="portal-header">
       <div className="portal-seal"><BookOpen size={25} strokeWidth={1.6} /></div>
@@ -14,7 +19,7 @@ export function PortalChrome({ children, themeColor, themeFont }: { children: Re
       <div className="portal-header-right">Thông tin chính thống<br /><strong>Kết nối tri thức Việt</strong></div>
     </div>
     <nav className="portal-nav"><span className="active">Trang chủ</span><span>Giới thiệu</span><span>Tin tức</span><span>Văn bản</span><span>Dịch vụ công</span><span>Liên hệ</span></nav>
-    <main className="portal-content">{children}</main>
+    <main className="portal-content" data-builder-page-blocks>{children}</main>
     <footer className="portal-footer"><div><strong>CỔNG THÔNG TIN ĐIỆN TỬ</strong><span>Bộ Giáo dục và Đào tạo · Bản xem trước giao diện</span></div><span>© 2026 MOET</span></footer>
   </div>;
-}
+};

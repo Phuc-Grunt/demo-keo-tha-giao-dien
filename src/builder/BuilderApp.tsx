@@ -18,26 +18,21 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
   Blocks,
   Check,
+  Code2,
   ChevronDown,
   CircleHelp,
   Download,
   Eye,
   FileText,
   LayoutGrid,
-  LayoutTemplate,
-  Link2,
-  Megaphone,
   Monitor,
   MoreHorizontal,
   Redo2,
   RotateCcw,
   Settings2,
   Smartphone,
-  PanelTop,
   PanelLeftClose,
   PanelLeftOpen,
-  Trash2,
-  Type,
   Undo2,
   Upload,
   X,
@@ -49,19 +44,12 @@ import {
   blockCatalog,
   blockKinds,
   BlockKind,
-  BuilderBlock,
-  DEFAULT_PAGE_WIDTH,
   documentSchema,
-  findBlock,
-  getBlockSource,
-  type TextStyle,
-  type TextStyleTarget,
+  getPageWidth,
+  flattenBlocks,
 } from "./model";
 import {
-  ColorPalette,
-  defaultAccentColors,
   PageWidthControl,
-  TextStyleControls,
   FontPicker,
 } from "./InspectorControls";
 import { useBuilderStore } from "./store";
@@ -72,6 +60,8 @@ import EditorCanvas from "./components/EditorCanvas";
 import Inspector from "./components/Inspector";
 import PaletteItem from "./components/PaletteItem";
 import paletteIcons from "./components/paletteIcons";
+import HtmlEditor from "./components/HtmlEditor";
+import { documentToHtml, MAX_TEMPLATE_HTML_SIZE } from "./htmlCodec";
 
 /** Điều phối trạng thái trình biên tập, dữ liệu API và các thao tác người dùng. */
 const BuilderApp = () => {
@@ -84,13 +74,14 @@ const BuilderApp = () => {
   const load = useBuilderStore((state) => state.load);
   const [hydrated, setHydrated] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [htmlSource, setHtmlSource] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   // Trạng thái đóng/mở của thư viện thành phần để nhường chỗ cho vùng chỉnh sửa.
   const [paletteOpen, setPaletteOpen] = useState(true);
-  const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
+  const pageWidth = useBuilderStore((state) => getPageWidth(state.document));
   const setPageWidth = useBuilderStore((state) => state.setPageWidth);
-  const themeFont = useBuilderStore((state) => state.document.themeFont);
+  const themeFont = useBuilderStore((state) => state.document.theme.fontFamily);
   const setThemeFont = useBuilderStore((state) => state.setThemeFont);
   const [draggingKind, setDraggingKind] = useState<BlockKind | null>(null);
   const [message, setMessage] = useState("");
@@ -124,6 +115,9 @@ const BuilderApp = () => {
             /* Giữ bố cục cục bộ khi Supabase chưa sẵn sàng. */
           });
       }
+    }).catch(() => {
+      setHydrated(true);
+      setMessage("Không thể khôi phục bản nháp cục bộ. Có thể nhập lại tệp JSON đã lưu.");
     });
   }, []);
 
@@ -138,17 +132,17 @@ const BuilderApp = () => {
 
   // Theo dõi cấu hình nguồn thay vì toàn bộ nội dung để tránh gọi API khi chỉ sửa tiêu đề.
   const blockSourceKey = JSON.stringify(
-    document.blocks.map((block) => [
+    flattenBlocks(document.blocks).map((block) => [
       block.id,
       block.kind,
-      getBlockSource(block),
+      block.data,
     ]),
   );
   // Tải lại dữ liệu từng khối khi loại khối hoặc cấu hình nguồn dữ liệu thay đổi.
   useEffect(() => {
     if (!hydrated) return;
     const controller = new AbortController();
-    const blocks = useBuilderStore.getState().document.blocks;
+    const blocks = flattenBlocks(useBuilderStore.getState().document.blocks);
     void Promise.all(
       blocks.map(async (block) => {
         try {
@@ -234,13 +228,17 @@ const BuilderApp = () => {
     setMessage("Đã tải xuống bố cục JSON.");
   }
 
-  /** Đọc tệp JSON, kiểm tra cấu trúc rồi nạp bố cục hợp lệ vào store. */
+  /** JSON được chuyển sang v2; HTML được mở trong editor để kiểm tra trước khi áp dụng. */
   async function importJson(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
-      const parsed = documentSchema.safeParse(JSON.parse(await file.text()));
+      const isHtml = /\.html?$/i.test(file.name) || file.type === "text/html";
+      if (file.size > (isHtml ? MAX_TEMPLATE_HTML_SIZE : 3_000_000)) throw new Error(`Tệp vượt quá ${isHtml ? 10 : 3} MB.`);
+      const text = await file.text();
+      if (isHtml) { setHtmlSource(text); return; }
+      const parsed = documentSchema.safeParse(JSON.parse(text));
       if (!parsed.success)
         throw new Error("Tệp JSON không đúng cấu trúc của demo.");
       load(parsed.data);
@@ -252,12 +250,19 @@ const BuilderApp = () => {
     }
   }
 
+  /** Xuất template từ JSON chuẩn và mở màn sửa mã có preview trực tiếp. */
+  function openHtmlEditor() {
+    try { setHtmlSource(documentToHtml(document)); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Không thể tạo HTML."); }
+  }
+
   const previewPage = (
-    <PortalChrome>
+    <PortalChrome document={document}>
       {document.blocks.map((block) => (
         <BlockRenderer
           block={block}
           {...dataByBlock[block.id]}
+          dataByBlock={dataByBlock}
           isEditor={false}
           key={block.id}
         />
@@ -291,7 +296,7 @@ const BuilderApp = () => {
         <div className="document-location">
           <span>Giao diện trang</span>
           <span className="breadcrumb-chevron">/</span>
-          <strong>{document.name}</strong>
+          <strong>{document.meta.name}</strong>
           <ChevronDown size={14} />
         </div>
         <div className="header-spacer" />
@@ -538,18 +543,20 @@ const BuilderApp = () => {
       <input
         ref={fileInput}
         type="file"
-        accept="application/json,.json"
+        accept="application/json,.json,text/html,.html,.htm"
         hidden
         onChange={importJson}
       />
       <div className="bottom-tools">
         <button onClick={() => fileInput.current?.click()}>
-          <Upload size={15} /> Nhập JSON
+          <Upload size={15} /> Nhập JSON / HTML
         </button>
         <span />{" "}
         <button onClick={exportJson}>
           <Download size={15} /> Xuất JSON
         </button>
+        <span />
+        <button onClick={openHtmlEditor}><Code2 size={15} /> HTML Editor</button>
         <span />
         <button onClick={reset}>
           <RotateCcw size={15} /> Khôi phục mẫu
@@ -569,6 +576,9 @@ const BuilderApp = () => {
         </div>
       )}
 
+      {htmlSource !== null && <HtmlEditor initialHtml={htmlSource} onClose={() => setHtmlSource(null)} onApply={(nextDocument) => {
+        load(nextDocument); setHtmlSource(null); setMessage("Đã chuyển HTML thành JSON v2 và cập nhật trình dựng.");
+      }} />}
       {preview && (
         <div
           className="preview-modal"

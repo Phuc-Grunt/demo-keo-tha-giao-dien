@@ -8,10 +8,10 @@ const TickerBlock = ({ block, articles }: BlockViewProps) => {
   // Nhân đôi 3 lần để animation không bị gián đoạn
   const repeated = [...items, ...items, ...items];
   return (
-    <div id={block.id} className={`render-block ticker-block accent-${block.accent}`}>
+    <div id={block.id} className={`render-block ticker-block accent-${block.theme.accent}`}>
       <span className="ticker-label">
         <Rss size={11} strokeWidth={2} />
-        <span>{block.eyebrow || "TIN NHANH"}</span>
+        <span>{block.content.eyebrow || "TIN NHANH"}</span>
       </span>
       <div className="ticker-mask">
         <div className="ticker-track">

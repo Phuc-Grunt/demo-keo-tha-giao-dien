@@ -1,153 +1,53 @@
-import { z } from "zod";
+import { sourceDefaults, normalizeLegacyBlock, type LegacyBuilderBlock, type BlockSourceConfig, type BuilderBlock, type BuilderDocument, type BlockKind } from "./schema";
+export * from "./schema";
+export type BlockDataSource = BlockSourceConfig;
 
-export const blockKinds = ["hero", "news", "notice", "stats", "links", "text", "gallery", "ticker", "featured", "video", "events", "tabs", "columns"] as const;
-export type BlockKind = (typeof blockKinds)[number];
-
-const dataSourceSchema = z.object({
-  categorySlug: z.string().max(100),
-  mode: z.enum(["latest", "hot"]),
-  limit: z.number().int().min(1).max(12),
-  columns: z.number().int().min(1).max(6).optional(),
-  gridTemplate: z.string().max(100).optional(),
-  gap: z.number().optional(),
-  padding: z.number().optional(),
-  backgroundColor: z.string().max(50).optional(),
-});
-
-/** Độ rộng trang mặc định (px), khớp với phần hiển thị trang đã xuất bản. */
 export const DEFAULT_PAGE_WIDTH = 1140;
 export const MIN_PAGE_WIDTH = 640;
 export const MAX_PAGE_WIDTH = 1920;
 
-/**
- * Chỉ chấp nhận mã màu hex (#rgb hoặc #rrggbb) để giá trị đưa vào CSS luôn an toàn.
- * Trả về undefined nếu giá trị không hợp lệ.
- */
+/** Độ rộng số cho khung biên tập; CSS vẫn hỗ trợ đơn vị trên các layout con. */
+export function getPageWidth(document: BuilderDocument): number {
+  const width = document.page.layout?.maxWidth;
+  return typeof width === "number" ? width : DEFAULT_PAGE_WIDTH;
+}
+
+/** Chấp nhận màu hex cho bộ chọn màu của trình dựng. */
 export function sanitizeColor(value: string | undefined): string | undefined {
   return value && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value) ? value : undefined;
 }
 
-/** Kích thước chữ (px) và màu chữ tùy chỉnh cho một phần nội dung của khối. */
-export type TextStyle = { size?: number; color?: string };
-
-/** Tùy chỉnh chữ cho nhãn nhỏ, tiêu đề và mô tả của khối. */
-export type BlockTextStyles = {
-  eyebrow?: TextStyle;
-  title?: TextStyle;
-  description?: TextStyle;
-};
-
-export type TextStyleTarget = keyof BlockTextStyles;
-
-const textStyleSchema = z.object({
-  size: z.number().min(8).max(96).optional(),
-  color: z.string().max(30).optional(),
-});
-
-const textStylesSchema = z.object({
-  eyebrow: textStyleSchema.optional(),
-  title: textStyleSchema.optional(),
-  description: textStyleSchema.optional(),
-});
-
-// ── Kiểu có slots (dùng recursion thủ công vì Zod z.lazy mất type inference) ──
-export type BuilderBlock = {
-  id: string;
-  kind: BlockKind;
-  title: string;
-  description: string;
-  eyebrow: string;
-  accent: "blue" | "red" | "green";
-  /** Màu nhấn tùy ý (mã hex), ưu tiên hơn `accent` khi có giá trị. */
-  accentColor?: string;
-  /** Tên font (nếu có) cấu hình riêng cho block. */
-  fontFamily?: string;
-  /** Kích thước và màu chữ của nhãn nhỏ, tiêu đề, mô tả. */
-  textStyles?: BlockTextStyles;
-  items: string[];
-  variant?: string;
-  autoSlide?: boolean;
-  slideInterval?: number;
-  imageUrl?: string;
-  dataSource?: {
-    categorySlug: string; mode: "latest" | "hot"; limit: number;
-    columns?: number;
-    gridTemplate?: string;
-    gap?: number;
-    padding?: number;
-    backgroundColor?: string;
-  };
-  /** Chỉ dùng cho kind="columns": mảng các cột, mỗi cột là mảng block con */
-  slots?: BuilderBlock[][];
-};
-
-// Zod schema cho validation – không cần recursive vì slots được parse thủ công
-export const blockSchema = z.object({
-  id: z.string().min(1),
-  kind: z.enum(blockKinds),
-  title: z.string().max(200),
-  description: z.string().max(1000),
-  eyebrow: z.string().max(100),
-  accent: z.enum(["blue", "red", "green"]),
-  accentColor: z.string().max(30).optional(),
-  fontFamily: z.string().max(100).optional(),
-  textStyles: textStylesSchema.optional(),
-  items: z.array(z.string().max(200)).max(8),
-  variant: z.string().max(50).optional(),
-  autoSlide: z.boolean().optional(),
-  slideInterval: z.number().int().min(1).max(30).optional(),
-  imageUrl: z.string().max(1000).optional(),
-  dataSource: dataSourceSchema.optional(),
-  slots: z.array(z.array(z.any())).optional(),
-}) satisfies z.ZodType<Omit<BuilderBlock, "slots"> & { slots?: unknown[][] | undefined }>;
-
-export const documentSchema = z.object({
-  version: z.literal(1),
-  name: z.string().max(100),
-  pageWidth: z.number().int().min(MIN_PAGE_WIDTH).max(MAX_PAGE_WIDTH).optional(),
-  themeColor: z.string().max(30).optional(),
-  themeFont: z.string().max(100).optional(),
-  blocks: z.array(blockSchema).max(100),
-}).refine((document) => new Set(document.blocks.map((block) => block.id)).size === document.blocks.length, {
-  message: "ID của các khối phải khác nhau.",
-});
-
-export type BuilderDocument = { version: 1; name: string; pageWidth?: number; themeColor?: string; themeFont?: string; blocks: BuilderBlock[] };
-export type BlockDataSource = z.infer<typeof dataSourceSchema>;
-
+/** Tìm khối trong toàn bộ cây tài liệu. */
 export function findBlock(blocks: BuilderBlock[], id: string): BuilderBlock | undefined {
   for (const block of blocks) {
     if (block.id === id) return block;
-    if (block.slots) {
-      for (const col of block.slots) {
-        const found = findBlock(col, id);
-        if (found) return found;
-      }
+    for (const slot of block.slots ?? []) {
+      const found = findBlock(slot.blocks, id);
+      if (found) return found;
     }
   }
   return undefined;
 }
 
-const sourceDefaults: Record<BlockKind, BlockDataSource> = {
-  hero: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
-  news: { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
-  notice: { categorySlug: "thong-bao", mode: "latest", limit: 3, columns: 1 },
-  stats: { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
-  links: { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
-  text: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
-  gallery: { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
-  ticker: { categorySlug: "", mode: "latest", limit: 6, columns: 1 },
-  featured: { categorySlug: "", mode: "latest", limit: 5, columns: 3 },
-  video: { categorySlug: "", mode: "latest", limit: 4, columns: 3 },
-  events: { categorySlug: "", mode: "latest", limit: 5, columns: 2 },
-  tabs: { categorySlug: "", mode: "latest", limit: 6, columns: 3 },
-  columns: { categorySlug: "", mode: "latest", limit: 1, columns: 2 },
-};
-
-export function getBlockSource(block: BuilderBlock): BlockDataSource {
-  return { ...sourceDefaults[block.kind], ...block.dataSource };
+/** Danh sách phẳng để resolver lấy dữ liệu cho cả khối nằm trong các cột. */
+export function flattenBlocks(blocks: BuilderBlock[]): BuilderBlock[] {
+  return blocks.flatMap((block) => [block, ...flattenBlocks((block.slots ?? []).flatMap((slot) => slot.blocks))]);
 }
 
+/** View cấu hình cho các control cũ; dữ liệu lưu vẫn tách data/layout/style. */
+export function getBlockSource(block: BuilderBlock): BlockSourceConfig {
+  const defaults = sourceDefaults[block.kind];
+  return {
+    categorySlug: block.data?.source.type === "articles" ? block.data.source.categorySlug : "",
+    mode: block.data?.query.mode ?? defaults.mode,
+    limit: block.data?.query.limit ?? defaults.limit,
+    columns: block.kind === "columns" ? block.slots?.length ?? 2 : block.parts?.items?.layout?.columns ?? defaults.columns,
+    gridTemplate: block.layout?.gridTemplateColumns,
+    gap: block.layout?.gap,
+    padding: block.style?.padding?.top,
+    backgroundColor: block.style?.backgroundColor,
+  };
+}
 export const blockCatalog: Record<BlockKind, { label: string; description: string; category: string }> = {
   hero: { label: "Banner nổi bật", description: "Tiêu đề và lời giới thiệu", category: "Trang chủ" },
   news: { label: "Tin tức", description: "Danh sách tin theo thẻ", category: "Tin tức" },
@@ -164,7 +64,7 @@ export const blockCatalog: Record<BlockKind, { label: string; description: strin
   columns: { label: "Lưới cột", description: "Chia thành nhiều cột kéo thả", category: "Cơ bản" },
 };
 
-type BlockDefaults = Omit<BuilderBlock, "id" | "kind">;
+type BlockDefaults = Omit<LegacyBuilderBlock, "id" | "kind">;
 
 const defaults: Record<BlockKind, BlockDefaults> = {
   hero: {
@@ -301,17 +201,17 @@ const defaults: Record<BlockKind, BlockDefaults> = {
   },
 };
 
+/** Tạo khối mới trực tiếp theo cấu trúc chuẩn v2. */
 export function makeBlock(kind: BlockKind): BuilderBlock {
-  return { id: crypto.randomUUID(), kind, ...structuredClone(defaults[kind]) };
+  return normalizeLegacyBlock({ id: crypto.randomUUID(), kind, ...structuredClone(defaults[kind]) });
 }
 
 export const starterDocument: BuilderDocument = {
-  version: 1,
-  name: "Trang chủ Cổng thông tin",
-  blocks: [
-    { id: "demo-hero", kind: "hero", ...defaults.hero },
-    { id: "demo-news", kind: "news", ...defaults.news },
-    { id: "demo-stats", kind: "stats", ...defaults.stats },
-    { id: "demo-links", kind: "links", ...defaults.links },
-  ],
+  version: 2,
+  meta: { name: "Trang chủ Cổng thông tin" },
+  theme: {},
+  page: {},
+  blocks: (["hero", "news", "stats", "links"] as const).map((kind) =>
+    normalizeLegacyBlock({ id: `demo-${kind}`, kind, ...structuredClone(defaults[kind]) }),
+  ),
 };

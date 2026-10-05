@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { BlockViewProps } from "./types";
-import { fallbackItems } from "./types";
+import { fallbackItems, itemStrings } from "./types";
 import BlockImage from "./BlockImage";
 import SectionHeading from "./SectionHeading";
 import type { Article } from "@/lib/supabase";
@@ -12,8 +12,8 @@ import type { Article } from "@/lib/supabase";
 const TabsBlock = ({ block, articles }: BlockViewProps) => {
   const variant = block.variant ?? "underline";
   const tabLabels =
-    block.items.length > 0
-      ? block.items.slice(0, 5)
+    block.content.items.length > 0
+      ? itemStrings(block).slice(0, 5)
       : ["Mới nhất", "Nổi bật", "Giáo dục", "Xã hội"];
   const [activeTab, setActiveTab] = useState(0);
 
@@ -30,7 +30,7 @@ const TabsBlock = ({ block, articles }: BlockViewProps) => {
   return (
     <section
       id={block.id}
-      className={`render-block content-section tabs-section accent-${block.accent}`}
+      className={`render-block content-section tabs-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} />
       {/* Tab bar */}

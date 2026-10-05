@@ -9,15 +9,15 @@ const HeroBlock = ({ block, entries }: BlockViewProps) => {
   const href = safeHref(hero?.href);
   const cta = <>Khám phá ngay <ArrowRight size={15} /></>;
   const variantClass = block.variant === "full" ? " hero-full" : "";
-  return <section id={block.id} className={`render-block hero-block accent-${block.accent}${variantClass}`}>
+  return <section id={block.id} className={`render-block hero-block accent-${block.theme.accent}${variantClass}`}>
     <div className="hero-copy">
-      {block.eyebrow && <span className="hero-eyebrow"><span className="hero-dot" />{block.eyebrow}</span>}
-      {(hero?.title || block.title) && <h1>{hero?.title || block.title}</h1>}
-      {(hero?.description || block.description) && <p>{hero?.description || block.description}</p>}
+      {block.content.eyebrow && <span className="hero-eyebrow"><span className="hero-dot" />{block.content.eyebrow}</span>}
+      {(hero?.title || block.content.title) && <h1>{hero?.title || block.content.title}</h1>}
+      {(hero?.description || block.content.description) && <p>{hero?.description || block.content.description}</p>}
       {href ? <a className="hero-cta" href={href}>{cta}</a> : <span className="hero-cta">{cta}</span>}
     </div>
     <div className="hero-art">
-      <BlockImage src={block.imageUrl || hero?.image_url} alt={hero?.title || block.title} eager fallback={<>
+      <BlockImage src={block.content.imageUrl || hero?.image_url} alt={hero?.title || block.content.title} eager fallback={<>
         <div className="hero-orbit orbit-one" />
         <div className="hero-orbit orbit-two" />
         <div className="hero-illustration"><GraduationCap size={66} strokeWidth={1.2} /></div>

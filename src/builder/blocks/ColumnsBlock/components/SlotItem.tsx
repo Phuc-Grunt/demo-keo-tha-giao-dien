@@ -3,11 +3,12 @@
 import { BlockRenderer } from "@/builder/BlockRenderer";
 import { blockCatalog, BuilderBlock } from "@/builder/model";
 import { useBuilderStore } from "@/builder/store";
+import type { BlockData } from "../../../builderApi";
 import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Trash2, Columns2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 /** Hiển thị một khối có thể kéo và chọn trong cột. */
 
 interface SlotItemProps {
@@ -15,6 +16,7 @@ interface SlotItemProps {
   parentId: string;
   colIdx: number;
   isOverlay?: boolean;
+  dataByBlock?: Record<string, BlockData>;
 }
 
 /** Hiển thị một khối có thể kéo và chọn trong cột. */
@@ -23,6 +25,7 @@ const SlotItem = ({
   parentId,
   colIdx,
   isOverlay = false,
+  dataByBlock,
 }: SlotItemProps) => {
   const removeFromSlot = useBuilderStore((s) => s.removeFromSlot);
   const select = useBuilderStore((s) => s.select);
@@ -66,7 +69,7 @@ const SlotItem = ({
         </button>
       </div>
       <div className="slot-item-preview">
-        <BlockRenderer block={block} />
+        <BlockRenderer block={block} dataByBlock={dataByBlock} {...dataByBlock?.[block.id]} isEditor={true} />
       </div>
     </div>
   );

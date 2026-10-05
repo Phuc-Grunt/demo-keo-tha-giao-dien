@@ -1,8 +1,9 @@
-import { Clock, Play } from "lucide-react";
+import { Clock } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
 import BlockImage from "./BlockImage";
 import SectionHeading from "./SectionHeading";
+import PlayBtn from "./PlayBtn";
 import type { Article } from "@/lib/supabase";
 
 type VItem = { id: string; title: string; img: string | null };
@@ -10,19 +11,6 @@ type VItem = { id: string; title: string; img: string | null };
 function toVItem(a: Article, i: number): VItem {
   return { id: a.id ?? String(i), title: a.title, img: a.image_url ?? null };
 }
-
-interface PlayBtnProps {
-  size?: number;
-}
-
-/** Hiển thị biểu tượng phát trên ảnh đại diện video. */
-const PlayBtn = ({ size = 32 }: PlayBtnProps) => {
-  return (
-    <div className="vplay-btn" style={{ width: size + 20, height: size + 20 }}>
-      <Play size={size} fill="white" strokeWidth={0} />
-    </div>
-  );
-};
 
 /** Hiển thị video theo bố cục lưới hoặc thanh bên. */
 const VideoBlock = ({ block, articles }: BlockViewProps) => {
@@ -33,7 +21,7 @@ const VideoBlock = ({ block, articles }: BlockViewProps) => {
       : fallbackItems(block).map((t, i) => ({
           id: String(i),
           title: t,
-          img: null,
+          img: block.content.items[i]?.imageUrl ?? null,
         }));
 
   /* ────── GRID variant ────── */
@@ -41,7 +29,7 @@ const VideoBlock = ({ block, articles }: BlockViewProps) => {
     return (
       <section
         id={block.id}
-        className={`render-block content-section video-section accent-${block.accent}`}
+        className={`render-block content-section video-section accent-${block.theme.accent}`}
       >
         <SectionHeading block={block} showViewAll />
         <div className="video-grid" style={gridColumnsStyle(block)}>
@@ -79,7 +67,7 @@ const VideoBlock = ({ block, articles }: BlockViewProps) => {
   return (
     <section
       id={block.id}
-      className={`render-block content-section video-section accent-${block.accent}`}
+      className={`render-block content-section video-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} showViewAll />
       <div className="video-sidebar-layout">

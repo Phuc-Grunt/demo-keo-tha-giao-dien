@@ -27,7 +27,7 @@ const BlockImage = ({
   const safeSrc =
     src &&
     ((src.startsWith("/") && !src.startsWith("//")) ||
-      src.startsWith("https://"))
+      src.startsWith("https://") || /^data:image\/(png|jpeg|gif|webp|avif);base64,[\da-z+/=\s]+$/i.test(src))
       ? src
       : null;
 
