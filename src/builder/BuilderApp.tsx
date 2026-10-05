@@ -43,7 +43,6 @@ import {
   LayoutTemplate,
   Link2,
   Megaphone,
-  Menu,
   Monitor,
   MoreHorizontal,
   Plus,
@@ -53,6 +52,8 @@ import {
   Settings2,
   Smartphone,
   PanelTop,
+  PanelLeftClose,
+  PanelLeftOpen,
   Trash2,
   Type,
   Undo2,
@@ -67,9 +68,18 @@ import {
   blockKinds,
   BlockKind,
   BuilderBlock,
+  DEFAULT_PAGE_WIDTH,
   documentSchema,
   getBlockSource,
+  type TextStyle,
+  type TextStyleTarget,
 } from "./model";
+import {
+  ColorPalette,
+  defaultAccentColors,
+  PageWidthControl,
+  TextStyleControls,
+} from "./InspectorControls";
 import { useBuilderStore } from "./store";
 import * as builderApi from "./builderApi";
 import type { BlockData } from "./builderApi";
@@ -296,6 +306,8 @@ function Inspector({
   const name = useBuilderStore((state) => state.document.name);
   const rename = useBuilderStore((state) => state.rename);
   const moveNode = useBuilderStore((state) => state.moveNode);
+  const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
+  const setPageWidth = useBuilderStore((state) => state.setPageWidth);
 
   if (!block)
     return (
@@ -335,6 +347,13 @@ function Inspector({
             onChange={(event) => rename(event.target.value)}
             maxLength={100}
           />
+          <label className="field-label" htmlFor="page-width">
+            Độ rộng trang <small>(px)</small>
+          </label>
+          <PageWidthControl value={pageWidth} onChange={setPageWidth} showPresets />
+          <p className="field-help">
+            Áp dụng cho trình dựng, bản xem trước và trang đã xuất bản.
+          </p>
           <div className="inspector-hint">
             <CircleHelp size={15} />
             <span>
@@ -358,6 +377,20 @@ function Inspector({
     "news", "notice", "stats", "links", "gallery",
     "ticker", "featured", "video", "events", "tabs",
   ].includes(block.kind);
+  /** Cập nhật cỡ chữ/màu chữ của một phần nội dung; xóa khóa khi quay về mặc định. */
+  function updateTextStyle(target: TextStyleTarget, style: TextStyle | undefined) {
+    const next = { ...block!.textStyles };
+    if (style) next[target] = style;
+    else delete next[target];
+    update(block!.id, { textStyles: Object.keys(next).length ? next : undefined });
+  }
+  /** Chọn màu nhấn; nếu trùng 3 màu mặc định thì quay lại màu nhấn có sẵn. */
+  function selectAccentColor(color: string) {
+    const preset = (Object.keys(defaultAccentColors) as BuilderBlock["accent"][]).find(
+      (key) => defaultAccentColors[key].toLowerCase() === color.toLowerCase(),
+    );
+    update(block!.id, preset ? { accent: preset, accentColor: undefined } : { accentColor: color });
+  }
   // Variant & columns
   const blockVariant = block.variant ?? "";
   const variantOptions: Partial<Record<typeof block.kind, { value: string; label: string }[]>> = {
@@ -418,10 +451,11 @@ function Inspector({
           </span>
           <Check size={16} />
         </div>
-        <div className="inspector-section">
-          <div className="inspector-section-heading">
-            NỘI DUNG <ChevronDown size={14} />
-          </div>
+        {!isColumnsBlock && (
+          <div className="inspector-section">
+            <div className="inspector-section-heading">
+              NỘI DUNG <ChevronDown size={14} />
+            </div>
           <label className="field-label" htmlFor="eyebrow">
             Nhãn nhỏ
           </label>
@@ -433,6 +467,11 @@ function Inspector({
             onChange={(event) =>
               update(block.id, { eyebrow: event.target.value })
             }
+          />
+          <TextStyleControls
+            idPrefix="eyebrow"
+            value={block.textStyles?.eyebrow}
+            onChange={(style) => updateTextStyle("eyebrow", style)}
           />
           <label className="field-label" htmlFor="title">
             Tiêu đề
@@ -446,6 +485,11 @@ function Inspector({
               update(block.id, { title: event.target.value })
             }
           />
+          <TextStyleControls
+            idPrefix="title"
+            value={block.textStyles?.title}
+            onChange={(style) => updateTextStyle("title", style)}
+          />
           <label className="field-label" htmlFor="description">
             Mô tả
           </label>
@@ -458,6 +502,11 @@ function Inspector({
               update(block.id, { description: event.target.value })
             }
             rows={4}
+          />
+          <TextStyleControls
+            idPrefix="description"
+            value={block.textStyles?.description}
+            onChange={(style) => updateTextStyle("description", style)}
           />
           {hasItems && (
             <>
@@ -477,7 +526,23 @@ function Inspector({
               />
             </>
           )}
+          {block.kind === "hero" && (
+            <>
+              <label className="field-label" htmlFor="imageUrl">
+                Hình ảnh (URL)
+              </label>
+              <input
+                id="imageUrl"
+                className="field-input"
+                type="text"
+                placeholder="https://..."
+                value={block.imageUrl || ""}
+                onChange={(event) => update(block.id, { imageUrl: event.target.value })}
+              />
+            </>
+          )}
         </div>
+        )}
         {/* ── Columns block: cấu hình số cột ── */}
         {isColumnsBlock && (
           <div className="inspector-section">
@@ -536,13 +601,10 @@ function Inspector({
             <label className="field-label" htmlFor="col-bg">
               Màu nền
             </label>
-            <input
+            <ColorPalette
               id="col-bg"
-              className="field-input"
-              type="text"
-              placeholder="Ví dụ: #f8fafc"
               value={block.dataSource?.backgroundColor || ""}
-              onChange={(e) => update(block.id, { dataSource: { ...source, backgroundColor: e.target.value } })}
+              onChange={(color) => update(block.id, { dataSource: { ...source, backgroundColor: color } })}
             />
           </div>
         )}
@@ -670,10 +732,11 @@ function Inspector({
             </>
           )}
         </div>
-        <div className="inspector-section">
-          <div className="inspector-section-heading">
-            GIAO DIỆN <ChevronDown size={14} />
-          </div>
+        {!isColumnsBlock && (
+          <div className="inspector-section">
+            <div className="inspector-section-heading">
+              GIAO DIỆN <ChevronDown size={14} />
+            </div>
           {hasVariant && currentVariantOpts && (
             <>
               <label className="field-label" htmlFor="block-variant">
@@ -695,24 +758,14 @@ function Inspector({
             </>
           )}
           <span className="field-label">Màu nhấn</span>
-          <div className="color-options">
-            {(["blue", "red", "green"] as const).map((accent) => (
-              <button
-                key={accent}
-                className={`color-option color-${accent} ${block.accent === accent ? "active" : ""}`}
-                onClick={() => update(block.id, { accent })}
-                title={
-                  accent === "blue"
-                    ? "Xanh dương"
-                    : accent === "red"
-                      ? "Đỏ"
-                      : "Xanh lá"
-                }
-                aria-label={`Chọn màu ${accent}`}
-              />
-            ))}
+            <ColorPalette
+              id="accent-color"
+              value={block.accentColor ?? defaultAccentColors[block.accent]}
+              onChange={selectAccentColor}
+            />
+
           </div>
-        </div>
+        )}
         <div className="inspector-actions">
           <button onClick={() => duplicate(block.id)}>
             <Copy size={15} /> Nhân bản
@@ -741,6 +794,10 @@ export default function BuilderApp() {
   const [preview, setPreview] = useState(false);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  // Trạng thái đóng/mở của thư viện thành phần để nhường chỗ cho vùng chỉnh sửa.
+  const [paletteOpen, setPaletteOpen] = useState(true);
+  const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
+  const setPageWidth = useBuilderStore((state) => state.setPageWidth);
   const [draggingKind, setDraggingKind] = useState<BlockKind | null>(null);
   const [message, setMessage] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
@@ -1003,7 +1060,16 @@ export default function BuilderApp() {
       >
         <div className="workspace">
           <nav className="icon-rail" aria-label="Điều hướng trình dựng trang">
-            <span className="rail-active" title="Thành phần">
+            <span
+              className={paletteOpen ? "rail-active" : ""}
+              role="button"
+              tabIndex={0}
+              title={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+              onClick={() => setPaletteOpen((open) => !open)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") setPaletteOpen((open) => !open);
+              }}
+            >
               <LayoutGrid size={19} />
             </span>
             <span title="Trang">
@@ -1017,13 +1083,20 @@ export default function BuilderApp() {
               <CircleHelp size={19} />
             </span>
           </nav>
-          <aside className="palette-panel">
+          <aside className={`palette-panel ${paletteOpen ? "" : "collapsed"}`} aria-hidden={!paletteOpen}>
             <div className="panel-header">
               <div>
                 <span className="panel-kicker">THƯ VIỆN</span>
                 <h2>Thành phần</h2>
               </div>
-              <Menu size={18} />
+              <button
+                className="palette-collapse"
+                title="Đóng thư viện thành phần"
+                aria-label="Đóng thư viện thành phần"
+                onClick={() => setPaletteOpen(false)}
+              >
+                <PanelLeftClose size={18} />
+              </button>
             </div>
             <div className="palette-body">
               <p className="palette-intro">
@@ -1060,11 +1133,26 @@ export default function BuilderApp() {
           <section className="main-workspace" aria-label="Vùng chỉnh sửa trang">
             <div className="workspace-toolbar">
               <div className="toolbar-title">
+                <button
+                  className="toolbar-more"
+                  title={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+                  aria-label={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+                  aria-expanded={paletteOpen}
+                  onClick={() => setPaletteOpen((open) => !open)}
+                >
+                  {paletteOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                </button>
                 <span className="toolbar-dot" />
                 <strong>Trình dựng trang</strong>
                 <span className="draft-badge">BẢN NHÁP</span>
               </div>
               <div className="toolbar-actions">
+                <span className="toolbar-label">Độ rộng trang</span>
+                <PageWidthControl
+                  value={pageWidth}
+                  onChange={setPageWidth}
+                  disabled={device === "mobile"}
+                />
                 <span className="toolbar-label">Thiết bị</span>
                 <div className="device-switch">
                   <button
@@ -1101,13 +1189,14 @@ export default function BuilderApp() {
             <div className="canvas-scroll">
               <div
                 className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}
+                style={device === "mobile" ? undefined : { width: `min(100%, ${pageWidth}px)` }}
               >
                 <div className="canvas-frame-label">
                   <span>
                     <span className="frame-live-dot" /> Trang chủ
                   </span>
                   <span>
-                    {device === "mobile" ? "375 px" : "Desktop"}{" "}
+                    {device === "mobile" ? "375 px" : `${pageWidth} px`}{" "}
                     <MoreHorizontal size={16} />
                   </span>
                 </div>
@@ -1226,7 +1315,10 @@ export default function BuilderApp() {
             </button>
           </div>
           <div className="preview-scroll">
-            <div className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}>
+            <div
+              className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}
+              style={device === "mobile" ? undefined : { width: `min(100%, ${pageWidth}px)` }}
+            >
               {previewPage}
             </div>
           </div>

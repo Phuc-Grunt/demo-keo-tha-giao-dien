@@ -14,6 +14,42 @@ const dataSourceSchema = z.object({
   backgroundColor: z.string().max(50).optional(),
 });
 
+/** Độ rộng trang mặc định (px), khớp với phần hiển thị trang đã xuất bản. */
+export const DEFAULT_PAGE_WIDTH = 1140;
+export const MIN_PAGE_WIDTH = 640;
+export const MAX_PAGE_WIDTH = 1920;
+
+/**
+ * Chỉ chấp nhận mã màu hex (#rgb hoặc #rrggbb) để giá trị đưa vào CSS luôn an toàn.
+ * Trả về undefined nếu giá trị không hợp lệ.
+ */
+export function sanitizeColor(value: string | undefined): string | undefined {
+  return value && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value) ? value : undefined;
+}
+
+/** Kích thước chữ (px) và màu chữ tùy chỉnh cho một phần nội dung của khối. */
+export type TextStyle = { size?: number; color?: string };
+
+/** Tùy chỉnh chữ cho nhãn nhỏ, tiêu đề và mô tả của khối. */
+export type BlockTextStyles = {
+  eyebrow?: TextStyle;
+  title?: TextStyle;
+  description?: TextStyle;
+};
+
+export type TextStyleTarget = keyof BlockTextStyles;
+
+const textStyleSchema = z.object({
+  size: z.number().min(8).max(96).optional(),
+  color: z.string().max(30).optional(),
+});
+
+const textStylesSchema = z.object({
+  eyebrow: textStyleSchema.optional(),
+  title: textStyleSchema.optional(),
+  description: textStyleSchema.optional(),
+});
+
 // ── Kiểu có slots (dùng recursion thủ công vì Zod z.lazy mất type inference) ──
 export type BuilderBlock = {
   id: string;
@@ -22,8 +58,13 @@ export type BuilderBlock = {
   description: string;
   eyebrow: string;
   accent: "blue" | "red" | "green";
+  /** Màu nhấn tùy ý (mã hex), ưu tiên hơn `accent` khi có giá trị. */
+  accentColor?: string;
+  /** Kích thước và màu chữ của nhãn nhỏ, tiêu đề, mô tả. */
+  textStyles?: BlockTextStyles;
   items: string[];
   variant?: string;
+  imageUrl?: string;
   dataSource?: { 
     categorySlug: string; mode: "latest" | "hot"; limit: number; 
     columns?: number; 
@@ -44,8 +85,11 @@ export const blockSchema = z.object({
   description: z.string().max(1000),
   eyebrow: z.string().max(100),
   accent: z.enum(["blue", "red", "green"]),
+  accentColor: z.string().max(30).optional(),
+  textStyles: textStylesSchema.optional(),
   items: z.array(z.string().max(200)).max(8),
   variant: z.string().max(50).optional(),
+  imageUrl: z.string().max(1000).optional(),
   dataSource: dataSourceSchema.optional(),
   slots: z.array(z.array(z.any())).optional(),
 }) satisfies z.ZodType<Omit<BuilderBlock, "slots"> & { slots?: unknown[][] | undefined }>;
@@ -53,12 +97,13 @@ export const blockSchema = z.object({
 export const documentSchema = z.object({
   version: z.literal(1),
   name: z.string().max(100),
+  pageWidth: z.number().int().min(MIN_PAGE_WIDTH).max(MAX_PAGE_WIDTH).optional(),
   blocks: z.array(blockSchema).max(100),
 }).refine((document) => new Set(document.blocks.map((block) => block.id)).size === document.blocks.length, {
   message: "ID của các khối phải khác nhau.",
 });
 
-export type BuilderDocument = { version: 1; name: string; blocks: BuilderBlock[] };
+export type BuilderDocument = { version: 1; name: string; pageWidth?: number; blocks: BuilderBlock[] };
 export type BlockDataSource = z.infer<typeof dataSourceSchema>;
 
 const sourceDefaults: Record<BlockKind, BlockDataSource> = {
