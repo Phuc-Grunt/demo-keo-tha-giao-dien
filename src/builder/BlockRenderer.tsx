@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { BlockViewProps } from "./blocks/types";
 import { sanitizeColor, type BuilderBlock, type TextStyleTarget } from "./model";
 import HeroBlock from "./blocks/HeroBlock";
@@ -20,11 +20,16 @@ const textTargets: TextStyleTarget[] = ["eyebrow", "title", "description"];
 /** Style cho phép gán biến CSS tùy chỉnh (bắt đầu bằng "--"). */
 type CssVarStyle = CSSProperties & Record<`--${string}`, string>;
 
+interface BlockStyleHooks {
+  className: string;
+  style: CSSProperties;
+}
+
 /**
  * Chuyển màu nhấn tùy ý và kiểu chữ của khối thành class + biến CSS.
  * portal.css dùng các class này để ghi đè giao diện mặc định của từng loại khối.
  */
-function blockStyleHooks(block: BuilderBlock): { className: string; style: CSSProperties } {
+function blockStyleHooks(block: BuilderBlock): BlockStyleHooks {
   const classes = ["block-wrap"];
   const vars: CssVarStyle = {};
   const accent = sanitizeColor(block.accentColor);
@@ -48,26 +53,23 @@ function blockStyleHooks(block: BuilderBlock): { className: string; style: CSSPr
 }
 
 /** Chọn component hiển thị theo loại khối, kèm lớp bọc áp dụng tùy chỉnh màu/chữ. */
-export function BlockRenderer(props: BlockViewProps) {
+export const BlockRenderer = (props: BlockViewProps) => {
   const hooks = blockStyleHooks(props.block);
-  return <div className={hooks.className} style={hooks.style}>{renderBlock(props)}</div>;
-}
-
-function renderBlock(props: BlockViewProps) {
+  let content: ReactNode = null;
   switch (props.block.kind) {
-    case "hero": return <HeroBlock {...props} />;
-    case "news": return <NewsBlock {...props} />;
-    case "notice": return <NoticeBlock {...props} />;
-    case "stats": return <StatsBlock {...props} />;
-    case "links": return <LinksBlock {...props} />;
-    case "text": return <TextBlock {...props} />;
-    case "gallery": return <GalleryBlock {...props} />;
-    case "ticker": return <TickerBlock {...props} />;
-    case "featured": return <FeaturedBlock {...props} />;
-    case "video": return <VideoBlock {...props} />;
-    case "events": return <EventsBlock {...props} />;
-    case "tabs": return <TabsBlock {...props} />;
-    case "columns": return <ColumnsBlock {...props} />;
-    default: return null;
+    case "hero": content = <HeroBlock {...props} />; break;
+    case "news": content = <NewsBlock {...props} />; break;
+    case "notice": content = <NoticeBlock {...props} />; break;
+    case "stats": content = <StatsBlock {...props} />; break;
+    case "links": content = <LinksBlock {...props} />; break;
+    case "text": content = <TextBlock {...props} />; break;
+    case "gallery": content = <GalleryBlock {...props} />; break;
+    case "ticker": content = <TickerBlock {...props} />; break;
+    case "featured": content = <FeaturedBlock {...props} />; break;
+    case "video": content = <VideoBlock {...props} />; break;
+    case "events": content = <EventsBlock {...props} />; break;
+    case "tabs": content = <TabsBlock {...props} />; break;
+    case "columns": content = <ColumnsBlock {...props} />; break;
   }
-}
+  return <div className={hooks.className} style={hooks.style}>{content}</div>;
+};
