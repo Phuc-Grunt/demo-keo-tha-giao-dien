@@ -7,7 +7,8 @@ export function HeroBlock({ block, entries }: BlockViewProps) {
   const hero = entries?.[0];
   const href = safeHref(hero?.href);
   const cta = <>Khám phá ngay <ArrowRight size={15} /></>;
-  return <section id={block.id} className={`render-block hero-block accent-${block.accent}`}>
+  const variantClass = block.variant === "full" ? " hero-full" : "";
+  return <section id={block.id} className={`render-block hero-block accent-${block.accent}${variantClass}`}>
     <div className="hero-copy">
       {block.eyebrow && <span className="hero-eyebrow"><span className="hero-dot" />{block.eyebrow}</span>}
       {(hero?.title || block.title) && <h1>{hero?.title || block.title}</h1>}

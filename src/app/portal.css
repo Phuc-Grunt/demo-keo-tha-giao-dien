@@ -53,7 +53,7 @@
 }
 .portal-brand strong {
   font-size: 17px;
-  color: #113f7b;
+  color: var(--theme-color, #113f7b);
   letter-spacing: 0.1px;
 }
 .portal-brand span {
@@ -89,7 +89,7 @@
   white-space: nowrap;
 }
 .portal-nav span.active {
-  background: #b72f37;
+  background: var(--theme-color, #b72f37);
   color: #fff;
 }
 .portal-content {
@@ -97,7 +97,7 @@
 }
 .portal-footer {
   min-height: 77px;
-  background: #123b70;
+  background: var(--theme-color, #123b70);
   color: #b8cee5;
   display: flex;
   align-items: center;
@@ -1380,3 +1380,10 @@
 .block-wrap.has-description-color > .render-block .hero-copy p {
   color: var(--description-color);
 }
+
+/* Hero Full variant */
+.hero-full .hero-art { width: 100%; left: 0; z-index: 0; }
+.hero-full .hero-copy { z-index: 2; color: #fff; }
+.hero-full .hero-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.1) 100%); }
+.hero-full h1, .hero-full p, .hero-full .hero-eyebrow { color: #fff !important; }
+.hero-full .hero-dot { background: #fff; }

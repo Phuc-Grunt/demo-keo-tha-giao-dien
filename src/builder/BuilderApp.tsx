@@ -70,6 +70,7 @@ import {
   BuilderBlock,
   DEFAULT_PAGE_WIDTH,
   documentSchema,
+  findBlock,
   getBlockSource,
   type TextStyle,
   type TextStyleTarget,
@@ -174,7 +175,8 @@ function SortableBlock({
       ref={setNodeRef}
       className={`editor-block ${selected ? "selected" : ""} ${isDragging ? "is-dragging" : ""}`}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         select(block.id);
         onSelect();
       }}
@@ -238,15 +240,18 @@ function EditorCanvas({
   dataByBlock: Record<string, BlockData>;
 }) {
   const blocks = useBuilderStore((state) => state.document.blocks);
+  const themeColor = useBuilderStore((state) => state.document.themeColor);
   const add = useBuilderStore((state) => state.add);
   const selectedId = useBuilderStore((state) => state.selectedId);
+  const select = useBuilderStore((state) => state.select);
   const { setNodeRef, isOver } = useDroppable({ id: "canvas" });
   return (
     <div
       ref={setNodeRef}
       className={`editor-canvas ${isOver ? "canvas-over" : ""}`}
+      onClick={() => select(null)}
     >
-      <PortalChrome>
+      <PortalChrome themeColor={themeColor}>
         <SortableContext
           items={blocks.map((block) => block.id)}
           strategy={verticalListSortingStrategy}
@@ -297,7 +302,7 @@ function Inspector({
 }) {
   const selectedId = useBuilderStore((state) => state.selectedId);
   const block = useBuilderStore((state) =>
-    state.document.blocks.find((item) => item.id === selectedId),
+    selectedId ? findBlock(state.document.blocks, selectedId) : undefined
   );
   const update = useBuilderStore((state) => state.update);
   const remove = useBuilderStore((state) => state.remove);
@@ -308,6 +313,8 @@ function Inspector({
   const moveNode = useBuilderStore((state) => state.moveNode);
   const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
   const setPageWidth = useBuilderStore((state) => state.setPageWidth);
+  const themeColor = useBuilderStore((state) => state.document.themeColor);
+  const setThemeColor = useBuilderStore((state) => state.setThemeColor);
 
   if (!block)
     return (
@@ -354,6 +361,15 @@ function Inspector({
           <p className="field-help">
             Áp dụng cho trình dựng, bản xem trước và trang đã xuất bản.
           </p>
+          
+          <label className="field-label" htmlFor="page-theme">
+            Màu giao diện chung
+          </label>
+          <ColorPalette id="page-theme" value={themeColor || ""} onChange={setThemeColor} />
+          <p className="field-help">
+            Màu chủ đạo cho trang web, có thể dùng làm nền hoặc màu nhấn.
+          </p>
+
           <div className="inspector-hint">
             <CircleHelp size={15} />
             <span>
@@ -394,6 +410,10 @@ function Inspector({
   // Variant & columns
   const blockVariant = block.variant ?? "";
   const variantOptions: Partial<Record<typeof block.kind, { value: string; label: string }[]>> = {
+    hero: [
+      { value: "classic", label: "Chia đôi" },
+      { value: "full",    label: "Toàn màn hình" },
+    ],
     featured: [
       { value: "classic", label: "Ảnh lớn + danh sách" },
       { value: "grid",    label: "Lưới nhiều cột" },
@@ -538,6 +558,27 @@ function Inspector({
                 placeholder="https://..."
                 value={block.imageUrl || ""}
                 onChange={(event) => update(block.id, { imageUrl: event.target.value })}
+              />
+              <label className="field-label" htmlFor="imageUpload">
+                Tải ảnh lên (Từ máy tính)
+              </label>
+              <input
+                id="imageUpload"
+                className="field-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      if (ev.target?.result) {
+                        update(block.id, { imageUrl: ev.target.result as string });
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
               />
             </>
           )}
