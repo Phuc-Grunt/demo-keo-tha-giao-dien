@@ -1,7 +1,7 @@
 import { BlockRenderer } from "@/builder/BlockRenderer";
 import { PortalChrome } from "@/builder/PortalChrome";
 import Link from "next/link";
-import { getBlockSource, starterDocument } from "@/builder/model";
+import { DEFAULT_PAGE_WIDTH, getBlockSource, starterDocument } from "@/builder/model";
 import { getArticles, getContentEntries, getPublishedPage, hasPublicDatabase } from "@/lib/supabase";
 import type { Article, ContentEntry, ContentKind } from "@/lib/supabase";
 
@@ -35,7 +35,9 @@ export default async function PublishedSite() {
     }
   }
 
-  return <div className="published-shell">
+  // Khung ngoài có padding 20px mỗi bên nên cộng thêm 40px để nội dung đúng bằng độ rộng đã cấu hình.
+  const shellWidth = (document.pageWidth ?? DEFAULT_PAGE_WIDTH) + 40;
+  return <div className="published-shell" style={{ maxWidth: shellWidth }}>
     <div className="published-toolbar"><strong>Trang đã xuất bản</strong><Link href="/">Mở trình biên tập</Link></div>
     {notice && <div className="published-notice" role="status">{notice}</div>}
     <PortalChrome>{document.blocks.map((block) => <BlockRenderer key={block.id} block={block} isEditor={false} {...dataByBlock[block.id]} />)}</PortalChrome>

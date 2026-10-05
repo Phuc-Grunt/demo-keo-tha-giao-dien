@@ -1279,3 +1279,104 @@
   .stats-grid         { grid-template-columns: 1fr !important; }
 }
 
+
+/* ================================================================
+   TUY CHINH MAU NHAN & KIEU CHU TUNG KHOI
+   BlockRenderer boc moi khoi bang .block-wrap (display: contents) va
+   gan class/bien CSS; cac rule o day ghi de giao dien mac dinh.
+================================================================ */
+.block-wrap { display: contents; }
+
+/* -- Mau nhan tuy y (--block-accent) -- */
+.block-wrap.has-accent-color > .render-block .section-heading .eyebrow,
+.block-wrap.has-accent-color > .render-block .card-category,
+.block-wrap.has-accent-color > .render-block .notice-row small,
+.block-wrap.has-accent-color > .render-block .stat-card strong,
+.block-wrap.has-accent-color > .render-block .view-all {
+  color: var(--block-accent);
+}
+.block-wrap.has-accent-color > .notice-section .notice-icon,
+.block-wrap.has-accent-color > .links-section .link-icon {
+  background: color-mix(in srgb, var(--block-accent) 12%, #fff);
+  color: var(--block-accent);
+}
+.block-wrap.has-accent-color > .stats-section {
+  background: color-mix(in srgb, var(--block-accent) 8%, #fff);
+}
+.block-wrap.has-accent-color > .hero-block {
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--block-accent) 7%, #fff) 0%,
+    color-mix(in srgb, var(--block-accent) 13%, #fff) 60%,
+    color-mix(in srgb, var(--block-accent) 24%, #fff) 100%
+  );
+  color: var(--block-accent);
+}
+.block-wrap.has-accent-color > .hero-block .hero-art {
+  background: radial-gradient(
+    circle at 64% 45%,
+    color-mix(in srgb, var(--block-accent) 4%, #fff),
+    color-mix(in srgb, var(--block-accent) 22%, #fff)
+  );
+}
+.block-wrap.has-accent-color > .hero-block .hero-cta,
+.block-wrap.has-accent-color > .hero-block .hero-dot {
+  background: var(--block-accent);
+}
+.block-wrap.has-accent-color > .hero-block .hero-illustration,
+.block-wrap.has-accent-color > .hero-block .hero-art-label {
+  color: var(--block-accent);
+}
+.block-wrap.has-accent-color > .ticker-block {
+  background: var(--block-accent);
+  border-color: color-mix(in srgb, var(--block-accent) 80%, #000);
+}
+.block-wrap.has-accent-color > .ticker-block .ticker-mask::before,
+.block-wrap.has-accent-color > .ticker-block .ticker-mask::after {
+  color: var(--block-accent);
+}
+.block-wrap.has-accent-color > .featured-section .featured-cat-badge,
+.block-wrap.has-accent-color > .featured-section .featured-card-cat {
+  background: var(--block-accent);
+}
+.block-wrap.has-accent-color > .featured-section .featured-rank.rank-1 {
+  color: var(--block-accent);
+}
+.block-wrap.has-accent-color > .events-section .event-badge,
+.block-wrap.has-accent-color > .events-section .event-card-date {
+  background: var(--block-accent);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--block-accent) 20%, transparent);
+}
+.block-wrap.has-accent-color > .tabs-section .tabs-btn.tabs-btn-active::after {
+  background: var(--block-accent);
+}
+
+/* -- Kich thuoc chu tuy chinh (nhan nho / tieu de / mo ta) -- */
+.block-wrap.has-eyebrow-size > .render-block .section-heading .eyebrow,
+.block-wrap.has-eyebrow-size > .render-block .hero-eyebrow,
+.block-wrap.has-eyebrow-size > .ticker-block .ticker-label {
+  font-size: var(--eyebrow-size);
+}
+.block-wrap.has-title-size > .render-block .section-heading h2,
+.block-wrap.has-title-size > .render-block .hero-copy h1 {
+  font-size: var(--title-size);
+}
+.block-wrap.has-description-size > .render-block .section-heading p,
+.block-wrap.has-description-size > .render-block .hero-copy p {
+  font-size: var(--description-size);
+}
+
+/* -- Mau chu tuy chinh (dat sau mau nhan de uu tien hon) -- */
+.block-wrap.has-eyebrow-color > .render-block .section-heading .eyebrow,
+.block-wrap.has-eyebrow-color > .render-block .hero-eyebrow,
+.block-wrap.has-eyebrow-color > .ticker-block .ticker-label {
+  color: var(--eyebrow-color);
+}
+.block-wrap.has-title-color > .render-block .section-heading h2,
+.block-wrap.has-title-color > .render-block .hero-copy h1 {
+  color: var(--title-color);
+}
+.block-wrap.has-description-color > .render-block .section-heading p,
+.block-wrap.has-description-color > .render-block .hero-copy p {
+  color: var(--description-color);
+}
