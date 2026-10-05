@@ -10,13 +10,13 @@ const HeroBlock = ({ block, entries }: BlockViewProps) => {
   const cta = <>Khám phá ngay <ArrowRight size={15} /></>;
   return <section id={block.id} className={`render-block hero-block accent-${block.accent}`}>
     <div className="hero-copy">
-      <span className="hero-eyebrow"><span className="hero-dot" />{block.eyebrow}</span>
-      <h1>{hero?.title ?? block.title}</h1>
-      <p>{hero?.description ?? block.description}</p>
+      {block.eyebrow && <span className="hero-eyebrow"><span className="hero-dot" />{block.eyebrow}</span>}
+      {(hero?.title || block.title) && <h1>{hero?.title || block.title}</h1>}
+      {(hero?.description || block.description) && <p>{hero?.description || block.description}</p>}
       {href ? <a className="hero-cta" href={href}>{cta}</a> : <span className="hero-cta">{cta}</span>}
     </div>
     <div className="hero-art">
-      <BlockImage src={hero?.image_url} alt={hero?.title ?? block.title} eager fallback={<>
+      <BlockImage src={block.imageUrl || hero?.image_url} alt={hero?.title || block.title} eager fallback={<>
         <div className="hero-orbit orbit-one" />
         <div className="hero-orbit orbit-two" />
         <div className="hero-illustration"><GraduationCap size={66} strokeWidth={1.2} /></div>

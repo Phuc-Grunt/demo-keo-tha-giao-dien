@@ -24,13 +24,20 @@ import {
   Eye,
   FileText,
   LayoutGrid,
-  Menu,
+  LayoutTemplate,
+  Link2,
+  Megaphone,
   Monitor,
   MoreHorizontal,
   Redo2,
   RotateCcw,
   Settings2,
   Smartphone,
+  PanelTop,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Trash2,
+  Type,
   Undo2,
   Upload,
   X,
@@ -38,8 +45,23 @@ import {
 import { BlockRenderer } from "./BlockRenderer";
 import { Button } from "@/components/ui/button";
 import { PortalChrome } from "./PortalChrome";
-import { blockCatalog, blockKinds, documentSchema, getBlockSource } from "./model";
-import type { BlockKind } from "./model";
+import {
+  blockCatalog,
+  blockKinds,
+  BlockKind,
+  BuilderBlock,
+  DEFAULT_PAGE_WIDTH,
+  documentSchema,
+  getBlockSource,
+  type TextStyle,
+  type TextStyleTarget,
+} from "./model";
+import {
+  ColorPalette,
+  defaultAccentColors,
+  PageWidthControl,
+  TextStyleControls,
+} from "./InspectorControls";
 import { useBuilderStore } from "./store";
 import * as builderApi from "./builderApi";
 import type { BlockData } from "./builderApi";
@@ -62,6 +84,10 @@ const BuilderApp = () => {
   const [preview, setPreview] = useState(false);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  // Trạng thái đóng/mở của thư viện thành phần để nhường chỗ cho vùng chỉnh sửa.
+  const [paletteOpen, setPaletteOpen] = useState(true);
+  const pageWidth = useBuilderStore((state) => state.document.pageWidth ?? DEFAULT_PAGE_WIDTH);
+  const setPageWidth = useBuilderStore((state) => state.setPageWidth);
   const [draggingKind, setDraggingKind] = useState<BlockKind | null>(null);
   const [message, setMessage] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
@@ -324,7 +350,16 @@ const BuilderApp = () => {
       >
         <div className="workspace">
           <nav className="icon-rail" aria-label="Điều hướng trình dựng trang">
-            <span className="rail-active" title="Thành phần">
+            <span
+              className={paletteOpen ? "rail-active" : ""}
+              role="button"
+              tabIndex={0}
+              title={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+              onClick={() => setPaletteOpen((open) => !open)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") setPaletteOpen((open) => !open);
+              }}
+            >
               <LayoutGrid size={19} />
             </span>
             <span title="Trang">
@@ -338,13 +373,20 @@ const BuilderApp = () => {
               <CircleHelp size={19} />
             </span>
           </nav>
-          <aside className="palette-panel">
+          <aside className={`palette-panel ${paletteOpen ? "" : "collapsed"}`} aria-hidden={!paletteOpen}>
             <div className="panel-header">
               <div>
                 <span className="panel-kicker">THƯ VIỆN</span>
                 <h2>Thành phần</h2>
               </div>
-              <Menu size={18} />
+              <button
+                className="palette-collapse"
+                title="Đóng thư viện thành phần"
+                aria-label="Đóng thư viện thành phần"
+                onClick={() => setPaletteOpen(false)}
+              >
+                <PanelLeftClose size={18} />
+              </button>
             </div>
             <div className="palette-body">
               <p className="palette-intro">
@@ -381,11 +423,26 @@ const BuilderApp = () => {
           <section className="main-workspace" aria-label="Vùng chỉnh sửa trang">
             <div className="workspace-toolbar">
               <div className="toolbar-title">
+                <button
+                  className="toolbar-more"
+                  title={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+                  aria-label={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+                  aria-expanded={paletteOpen}
+                  onClick={() => setPaletteOpen((open) => !open)}
+                >
+                  {paletteOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                </button>
                 <span className="toolbar-dot" />
                 <strong>Trình dựng trang</strong>
                 <span className="draft-badge">BẢN NHÁP</span>
               </div>
               <div className="toolbar-actions">
+                <span className="toolbar-label">Độ rộng trang</span>
+                <PageWidthControl
+                  value={pageWidth}
+                  onChange={setPageWidth}
+                  disabled={device === "mobile"}
+                />
                 <span className="toolbar-label">Thiết bị</span>
                 <div className="device-switch">
                   <button
@@ -422,13 +479,14 @@ const BuilderApp = () => {
             <div className="canvas-scroll">
               <div
                 className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}
+                style={device === "mobile" ? undefined : { width: `min(100%, ${pageWidth}px)` }}
               >
                 <div className="canvas-frame-label">
                   <span>
                     <span className="frame-live-dot" /> Trang chủ
                   </span>
                   <span>
-                    {device === "mobile" ? "375 px" : "Desktop"}{" "}
+                    {device === "mobile" ? "375 px" : `${pageWidth} px`}{" "}
                     <MoreHorizontal size={16} />
                   </span>
                 </div>
@@ -547,7 +605,10 @@ const BuilderApp = () => {
             </button>
           </div>
           <div className="preview-scroll">
-            <div className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}>
+            <div
+              className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}
+              style={device === "mobile" ? undefined : { width: `min(100%, ${pageWidth}px)` }}
+            >
               {previewPage}
             </div>
           </div>

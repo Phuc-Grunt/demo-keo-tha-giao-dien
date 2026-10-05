@@ -15,6 +15,8 @@ type BuilderState = {
   future: BuilderDocument[];
   select: (id: string | null) => void;
   rename: (name: string) => void;
+  /** Đổi độ rộng (px) của trang trong trình dựng và trang đã xuất bản. */
+  setPageWidth: (width: number) => void;
   add: (kind: BlockKind, beforeId?: string) => void;
   move: (id: string, overId?: string) => void;
   moveNode: (activeId: string, overId: string | null) => void;
@@ -71,6 +73,15 @@ export const useBuilderStore = create<BuilderState>()(
           past: [...state.past.slice(-29), state.document],
           future: [],
         })),
+      setPageWidth: (pageWidth) =>
+        set((state) => {
+          if (state.document.pageWidth === pageWidth) return state;
+          return {
+            document: { ...state.document, pageWidth },
+            past: [...state.past.slice(-29), state.document],
+            future: [],
+          };
+        }),
       add: (kind, beforeId) =>
         set((state) => {
           const block = makeBlock(kind);
