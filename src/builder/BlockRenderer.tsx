@@ -37,6 +37,10 @@ function blockStyleHooks(block: BuilderBlock): BlockStyleHooks {
     classes.push("has-accent-color");
     vars["--block-accent"] = accent;
   }
+  if (block.fontFamily) {
+    classes.push("has-custom-font");
+    vars["--theme-font"] = block.fontFamily;
+  }
   for (const target of textTargets) {
     const textStyle = block.textStyles?.[target];
     if (textStyle?.size) {

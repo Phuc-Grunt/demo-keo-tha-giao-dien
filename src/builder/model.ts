@@ -60,17 +60,21 @@ export type BuilderBlock = {
   accent: "blue" | "red" | "green";
   /** Màu nhấn tùy ý (mã hex), ưu tiên hơn `accent` khi có giá trị. */
   accentColor?: string;
+  /** Tên font (nếu có) cấu hình riêng cho block. */
+  fontFamily?: string;
   /** Kích thước và màu chữ của nhãn nhỏ, tiêu đề, mô tả. */
   textStyles?: BlockTextStyles;
   items: string[];
   variant?: string;
+  autoSlide?: boolean;
+  slideInterval?: number;
   imageUrl?: string;
-  dataSource?: { 
-    categorySlug: string; mode: "latest" | "hot"; limit: number; 
-    columns?: number; 
-    gridTemplate?: string; 
-    gap?: number; 
-    padding?: number; 
+  dataSource?: {
+    categorySlug: string; mode: "latest" | "hot"; limit: number;
+    columns?: number;
+    gridTemplate?: string;
+    gap?: number;
+    padding?: number;
     backgroundColor?: string;
   };
   /** Chỉ dùng cho kind="columns": mảng các cột, mỗi cột là mảng block con */
@@ -86,9 +90,12 @@ export const blockSchema = z.object({
   eyebrow: z.string().max(100),
   accent: z.enum(["blue", "red", "green"]),
   accentColor: z.string().max(30).optional(),
+  fontFamily: z.string().max(100).optional(),
   textStyles: textStylesSchema.optional(),
   items: z.array(z.string().max(200)).max(8),
   variant: z.string().max(50).optional(),
+  autoSlide: z.boolean().optional(),
+  slideInterval: z.number().int().min(1).max(30).optional(),
   imageUrl: z.string().max(1000).optional(),
   dataSource: dataSourceSchema.optional(),
   slots: z.array(z.array(z.any())).optional(),
@@ -99,12 +106,13 @@ export const documentSchema = z.object({
   name: z.string().max(100),
   pageWidth: z.number().int().min(MIN_PAGE_WIDTH).max(MAX_PAGE_WIDTH).optional(),
   themeColor: z.string().max(30).optional(),
+  themeFont: z.string().max(100).optional(),
   blocks: z.array(blockSchema).max(100),
 }).refine((document) => new Set(document.blocks.map((block) => block.id)).size === document.blocks.length, {
   message: "ID của các khối phải khác nhau.",
 });
 
-export type BuilderDocument = { version: 1; name: string; pageWidth?: number; themeColor?: string; blocks: BuilderBlock[] };
+export type BuilderDocument = { version: 1; name: string; pageWidth?: number; themeColor?: string; themeFont?: string; blocks: BuilderBlock[] };
 export type BlockDataSource = z.infer<typeof dataSourceSchema>;
 
 export function findBlock(blocks: BuilderBlock[], id: string): BuilderBlock | undefined {
@@ -121,19 +129,19 @@ export function findBlock(blocks: BuilderBlock[], id: string): BuilderBlock | un
 }
 
 const sourceDefaults: Record<BlockKind, BlockDataSource> = {
-  hero:     { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
-  news:     { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
-  notice:   { categorySlug: "thong-bao", mode: "latest", limit: 3, columns: 1 },
-  stats:    { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
-  links:    { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
-  text:     { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
-  gallery:  { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
-  ticker:   { categorySlug: "", mode: "latest", limit: 6, columns: 1 },
+  hero: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  news: { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
+  notice: { categorySlug: "thong-bao", mode: "latest", limit: 3, columns: 1 },
+  stats: { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
+  links: { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
+  text: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  gallery: { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
+  ticker: { categorySlug: "", mode: "latest", limit: 6, columns: 1 },
   featured: { categorySlug: "", mode: "latest", limit: 5, columns: 3 },
-  video:    { categorySlug: "", mode: "latest", limit: 4, columns: 3 },
-  events:   { categorySlug: "", mode: "latest", limit: 5, columns: 2 },
-  tabs:     { categorySlug: "", mode: "latest", limit: 6, columns: 3 },
-  columns:  { categorySlug: "", mode: "latest", limit: 1, columns: 2 },
+  video: { categorySlug: "", mode: "latest", limit: 4, columns: 3 },
+  events: { categorySlug: "", mode: "latest", limit: 5, columns: 2 },
+  tabs: { categorySlug: "", mode: "latest", limit: 6, columns: 3 },
+  columns: { categorySlug: "", mode: "latest", limit: 1, columns: 2 },
 };
 
 export function getBlockSource(block: BuilderBlock): BlockDataSource {
@@ -141,19 +149,19 @@ export function getBlockSource(block: BuilderBlock): BlockDataSource {
 }
 
 export const blockCatalog: Record<BlockKind, { label: string; description: string; category: string }> = {
-  hero:     { label: "Banner nổi bật",    description: "Tiêu đề và lời giới thiệu",       category: "Trang chủ" },
-  news:     { label: "Tin tức",           description: "Danh sách tin theo thẻ",           category: "Tin tức" },
-  notice:   { label: "Thông báo",         description: "Thông tin cần chú ý",              category: "Tin tức" },
-  featured: { label: "Tin nổi bật",       description: "Tin lớn + danh sách tin nhỏ",      category: "Tin tức" },
-  tabs:     { label: "Tab chuyên mục",    description: "Tin tức theo nhiều tab",            category: "Tin tức" },
-  ticker:   { label: "Dải tin nhanh",     description: "Tin tức chạy ngang",               category: "Tin tức" },
-  video:    { label: "Video nổi bật",     description: "Khối video và danh sách",          category: "Đa phương tiện" },
-  gallery:  { label: "Thư viện ảnh",      description: "Ảnh từ cơ sở dữ liệu",            category: "Đa phương tiện" },
-  events:   { label: "Lịch sự kiện",      description: "Danh sách sự kiện sắp tới",        category: "Tiện ích" },
-  stats:    { label: "Số liệu",           description: "Các chỉ số nổi bật",               category: "Tiện ích" },
-  links:    { label: "Liên kết nhanh",    description: "Lối tắt đến chuyên mục",           category: "Điều hướng" },
-  text:     { label: "Đoạn văn",          description: "Nội dung văn bản đơn giản",        category: "Cơ bản" },
-  columns:  { label: "Lưới cột",          description: "Chia thành nhiều cột kéo thả",     category: "Cơ bản" },
+  hero: { label: "Banner nổi bật", description: "Tiêu đề và lời giới thiệu", category: "Trang chủ" },
+  news: { label: "Tin tức", description: "Danh sách tin theo thẻ", category: "Tin tức" },
+  notice: { label: "Thông báo", description: "Thông tin cần chú ý", category: "Tin tức" },
+  featured: { label: "Tin nổi bật", description: "Tin lớn + danh sách tin nhỏ", category: "Tin tức" },
+  tabs: { label: "Tab chuyên mục", description: "Tin tức theo nhiều tab", category: "Tin tức" },
+  ticker: { label: "Dải tin nhanh", description: "Tin tức chạy ngang", category: "Tin tức" },
+  video: { label: "Video nổi bật", description: "Khối video và danh sách", category: "Đa phương tiện" },
+  gallery: { label: "Thư viện ảnh", description: "Ảnh từ cơ sở dữ liệu", category: "Đa phương tiện" },
+  events: { label: "Lịch sự kiện", description: "Danh sách sự kiện sắp tới", category: "Tiện ích" },
+  stats: { label: "Số liệu", description: "Các chỉ số nổi bật", category: "Tiện ích" },
+  links: { label: "Liên kết nhanh", description: "Lối tắt đến chuyên mục", category: "Điều hướng" },
+  text: { label: "Đoạn văn", description: "Nội dung văn bản đơn giản", category: "Cơ bản" },
+  columns: { label: "Lưới cột", description: "Chia thành nhiều cột kéo thả", category: "Cơ bản" },
 };
 
 type BlockDefaults = Omit<BuilderBlock, "id" | "kind">;
@@ -172,7 +180,15 @@ const defaults: Record<BlockKind, BlockDefaults> = {
     title: "Tin tức và sự kiện",
     description: "Những thông tin nổi bật từ ngành giáo dục.",
     accent: "blue",
-    items: ["Đổi mới giáo dục trong giai đoạn mới", "Tăng cường ứng dụng công nghệ trong dạy học", "Hoạt động hợp tác và phát triển giáo dục"],
+    items: [
+      "IECEE 2026: Kiến tạo giải pháp cho những yêu cầu mới của giáo dục và nguồn nhân lực",
+      "Hướng dẫn thực hiện chính sách học bổng theo Nghị định số 179/2026/NĐ-CP",
+      "Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp",
+      "Bộ GDĐT công bố 14 thủ tục hành chính mới, thay thế 34 thủ tục",
+      "Rà soát, đánh giá nhiệm vụ trọng tâm đầu năm học đối với giáo dục mầm non, phổ thông",
+      "Ngoại ngữ chuyên ngành và khảo thí quốc tế tại Triển lãm Giáo dục và Công nghệ giáo dục",
+      "Tổ chức hoàn thiện sách giáo khoa, bảo đảm tính kế thừa, không gây xáo trộn",
+    ],
     dataSource: sourceDefaults.news,
   },
   notice: {
@@ -180,7 +196,11 @@ const defaults: Record<BlockKind, BlockDefaults> = {
     title: "Thông báo từ Bộ",
     description: "Các thông tin điều hành và hướng dẫn mới được cập nhật.",
     accent: "red",
-    items: ["Lịch làm việc tuần này", "Hướng dẫn triển khai nhiệm vụ năm học", "Thông tin tuyển sinh mới nhất"],
+    items: [
+      "Hướng dẫn thực hiện chính sách học bổng theo Nghị định số 179/2026/NĐ-CP",
+      "Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp",
+      "Bộ GDĐT công bố 14 thủ tục hành chính mới, thay thế 34 thủ tục"
+    ],
     dataSource: sourceDefaults.notice,
   },
   stats: {
@@ -220,7 +240,14 @@ const defaults: Record<BlockKind, BlockDefaults> = {
     title: "Dải tin tức nhanh",
     description: "Tin tức mới nhất chạy ngang trang.",
     accent: "red",
-    items: ["Bộ GD&ĐT công bố lịch thi THPT 2026", "Hội nghị đổi mới giáo dục toàn quốc", "Triển khai sách giáo khoa mới từ năm học 2026-2027", "Khai giảng năm học mới tại 63 tỉnh thành", "Thi học sinh giỏi quốc gia kết quả xuất sắc", "Chương trình học bổng sinh viên ưu tú 2026"],
+    items: [
+      "IECEE 2026: Kiến tạo giải pháp cho những yêu cầu mới của giáo dục và nguồn nhân lực",
+      "Hướng dẫn thực hiện chính sách học bổng theo Nghị định số 179/2026/NĐ-CP",
+      "Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp",
+      "Bộ GDĐT công bố 14 thủ tục hành chính mới, thay thế 34 thủ tục",
+      "Rà soát, đánh giá nhiệm vụ trọng tâm đầu năm học đối với giáo dục mầm non, phổ thông",
+      "Ngoại ngữ chuyên ngành và khảo thí quốc tế tại Triển lãm Giáo dục và Công nghệ giáo dục"
+    ],
     dataSource: sourceDefaults.ticker,
   },
   featured: {
@@ -228,7 +255,15 @@ const defaults: Record<BlockKind, BlockDefaults> = {
     title: "Tin tức nổi bật trong tuần",
     description: "Những thông tin quan trọng được chọn lọc.",
     accent: "blue",
-    items: ["Đổi mới chương trình giáo dục phổ thông", "Hội nghị tổng kết năm học 2025-2026", "Kết quả kỳ thi tốt nghiệp THPT", "Triển khai dạy học trực tuyến toàn quốc", "Chính sách hỗ trợ học sinh vùng khó khăn"],
+    items: [
+      "IECEE 2026: Kiến tạo giải pháp cho những yêu cầu mới của giáo dục và nguồn nhân lực",
+      "Hướng dẫn thực hiện chính sách học bổng theo Nghị định số 179/2026/NĐ-CP",
+      "Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp",
+      "Bộ GDĐT công bố 14 thủ tục hành chính mới, thay thế 34 thủ tục",
+      "Rà soát, đánh giá nhiệm vụ trọng tâm đầu năm học đối với giáo dục mầm non, phổ thông",
+      "Ngoại ngữ chuyên ngành và khảo thí quốc tế tại Triển lãm Giáo dục và Công nghệ giáo dục",
+      "Tổ chức hoàn thiện sách giáo khoa, bảo đảm tính kế thừa, không gây xáo trộn",
+    ],
     dataSource: sourceDefaults.featured,
   },
   video: {
@@ -274,8 +309,8 @@ export const starterDocument: BuilderDocument = {
   version: 1,
   name: "Trang chủ Cổng thông tin",
   blocks: [
-    { id: "demo-hero",  kind: "hero",  ...defaults.hero },
-    { id: "demo-news",  kind: "news",  ...defaults.news },
+    { id: "demo-hero", kind: "hero", ...defaults.hero },
+    { id: "demo-news", kind: "news", ...defaults.news },
     { id: "demo-stats", kind: "stats", ...defaults.stats },
     { id: "demo-links", kind: "links", ...defaults.links },
   ],

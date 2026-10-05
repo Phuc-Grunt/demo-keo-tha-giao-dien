@@ -18,6 +18,7 @@ const EditorCanvas = ({
 }: EditorCanvasProps) => {
   const blocks = useBuilderStore((state) => state.document.blocks);
   const themeColor = useBuilderStore((state) => state.document.themeColor);
+  const themeFont = useBuilderStore((state) => state.document.themeFont);
   const add = useBuilderStore((state) => state.add);
   const selectedId = useBuilderStore((state) => state.selectedId);
   const select = useBuilderStore((state) => state.select);
@@ -28,7 +29,7 @@ const EditorCanvas = ({
       className={`editor-canvas ${isOver ? "canvas-over" : ""}`}
       onClick={() => select(null)}
     >
-      <PortalChrome themeColor={themeColor}>
+      <PortalChrome themeColor={themeColor} themeFont={themeFont}>
         <SortableContext
           items={blocks.map((block) => block.id)}
           strategy={verticalListSortingStrategy}

@@ -257,3 +257,31 @@ export function PageWidthControl({ value, onChange, disabled = false, showPreset
     </div>
   );
 }
+
+export const FONT_OPTIONS = [
+  { value: "", label: "Mặc định (Arial)" },
+  { value: "Inter, sans-serif", label: "Inter" },
+  { value: "Roboto, sans-serif", label: "Roboto" },
+  { value: "'Open Sans', sans-serif", label: "Open Sans" },
+  { value: "'Montserrat', sans-serif", label: "Montserrat" },
+  { value: "'Lora', serif", label: "Lora" },
+  { value: "'Merriweather', serif", label: "Merriweather" },
+];
+
+export function FontPicker({ id, value, onChange }: { id: string; value?: string; onChange: (v: string) => void }) {
+  return (
+    <select
+      id={id}
+      className="field-input"
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      style={{ fontFamily: value || "inherit" }}
+    >
+      {FONT_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value} style={{ fontFamily: opt.value || "inherit" }}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}

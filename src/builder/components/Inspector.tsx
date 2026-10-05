@@ -3,7 +3,7 @@ import type { Category } from "@/lib/supabase";
 import { blockCatalog, getBlockSource, findBlock, DEFAULT_PAGE_WIDTH } from "../model";
 import type { TextStyle, TextStyleTarget, BuilderBlock } from "../model";
 import { useBuilderStore } from "../store";
-import { ColorPalette, PageWidthControl, TextStyleControls, defaultAccentColors } from "../InspectorControls";
+import { ColorPalette, PageWidthControl, TextStyleControls, defaultAccentColors, FontPicker } from "../InspectorControls";
 import paletteIcons from "./paletteIcons";
 
 interface InspectorProps {
@@ -37,6 +37,8 @@ const Inspector = ({
   const setPageWidth = useBuilderStore((state) => state.setPageWidth);
   const themeColor = useBuilderStore((state) => state.document.themeColor);
   const setThemeColor = useBuilderStore((state) => state.setThemeColor);
+  const themeFont = useBuilderStore((state) => state.document.themeFont);
+  const setThemeFont = useBuilderStore((state) => state.setThemeFont);
 
   if (!block)
     return (
@@ -83,13 +85,21 @@ const Inspector = ({
           <p className="field-help">
             Áp dụng cho trình dựng, bản xem trước và trang đã xuất bản.
           </p>
-          
+
           <label className="field-label" htmlFor="page-theme">
             Màu giao diện chung
           </label>
           <ColorPalette id="page-theme" value={themeColor || ""} onChange={setThemeColor} />
           <p className="field-help">
             Màu chủ đạo cho trang web, có thể dùng làm nền hoặc màu nhấn.
+          </p>
+
+          <label className="field-label" htmlFor="page-theme-font">
+            Font chữ giao diện chung
+          </label>
+          <FontPicker id="page-theme-font" value={themeFont} onChange={setThemeFont} />
+          <p className="field-help">
+            Font chữ mặc định cho toàn bộ trang web.
           </p>
 
           <div className="inspector-hint">
@@ -137,23 +147,23 @@ const Inspector = ({
   const variantOptions: Partial<Record<typeof block.kind, VariantOption[]>> = {
     hero: [
       { value: "classic", label: "Chia đôi" },
-      { value: "full",    label: "Toàn màn hình" },
+      { value: "full", label: "Toàn màn hình" },
     ],
     featured: [
       { value: "classic", label: "Ảnh lớn + danh sách" },
-      { value: "grid",    label: "Lưới nhiều cột" },
+      { value: "grid", label: "Lưới nhiều cột" },
     ],
     video: [
       { value: "sidebar", label: "Video lớn + danh sách" },
-      { value: "grid",    label: "Lưới thumbnail" },
+      { value: "grid", label: "Lưới thumbnail" },
     ],
     events: [
       { value: "timeline", label: "Dòng thời gian" },
-      { value: "cards",    label: "Thẻ sự kiện" },
+      { value: "cards", label: "Thẻ sự kiện" },
     ],
     tabs: [
       { value: "underline", label: "Gạch chân" },
-      { value: "pills",     label: "Viên nật (pills)" },
+      { value: "pills", label: "Viên nật (pills)" },
     ],
   };
   const currentVariantOpts = variantOptions[block.kind as keyof typeof variantOptions];
@@ -162,8 +172,8 @@ const Inspector = ({
   const hasColumns =
     ["news", "stats", "links", "gallery"].includes(block.kind) ||
     (block.kind === "featured" && (blockVariant === "grid" || !blockVariant)) ||
-    (block.kind === "video"    && (blockVariant === "grid" || !blockVariant)) ||
-    (block.kind === "events"   && (blockVariant === "cards" || !blockVariant)) ||
+    (block.kind === "video" && (blockVariant === "grid" || !blockVariant)) ||
+    (block.kind === "events" && (blockVariant === "cards" || !blockVariant)) ||
     block.kind === "tabs";
   const isNewsArticleBlock = block.kind === "news" || block.kind === "notice";
   return (
@@ -201,113 +211,113 @@ const Inspector = ({
             <div className="inspector-section-heading">
               NỘI DUNG <ChevronDown size={14} />
             </div>
-          <label className="field-label" htmlFor="eyebrow">
-            Nhãn nhỏ
-          </label>
-          <input
-            id="eyebrow"
-            className="field-input"
-            value={block.eyebrow}
-            maxLength={100}
-            onChange={(event) =>
-              update(block.id, { eyebrow: event.target.value })
-            }
-          />
-          <TextStyleControls
-            idPrefix="eyebrow"
-            value={block.textStyles?.eyebrow}
-            onChange={(style) => updateTextStyle("eyebrow", style)}
-          />
-          <label className="field-label" htmlFor="title">
-            Tiêu đề
-          </label>
-          <input
-            id="title"
-            className="field-input"
-            value={block.title}
-            maxLength={200}
-            onChange={(event) =>
-              update(block.id, { title: event.target.value })
-            }
-          />
-          <TextStyleControls
-            idPrefix="title"
-            value={block.textStyles?.title}
-            onChange={(style) => updateTextStyle("title", style)}
-          />
-          <label className="field-label" htmlFor="description">
-            Mô tả
-          </label>
-          <textarea
-            id="description"
-            className="field-input field-textarea"
-            value={block.description}
-            maxLength={1000}
-            onChange={(event) =>
-              update(block.id, { description: event.target.value })
-            }
-            rows={4}
-          />
-          <TextStyleControls
-            idPrefix="description"
-            value={block.textStyles?.description}
-            onChange={(style) => updateTextStyle("description", style)}
-          />
-          {hasItems && (
-            <>
-              <label className="field-label" htmlFor="items">
-                Nội dung dự phòng <small>(mỗi dòng một mục)</small>
-              </label>
-              <textarea
-                id="items"
-                className="field-input field-textarea items-textarea"
-                value={block.items.join("\n")}
-                onChange={(event) =>
-                  update(block.id, {
-                    items: event.target.value.split("\n").slice(0, 8),
-                  })
-                }
-                rows={5}
-              />
-            </>
-          )}
-          {block.kind === "hero" && (
-            <>
-              <label className="field-label" htmlFor="imageUrl">
-                Hình ảnh (URL)
-              </label>
-              <input
-                id="imageUrl"
-                className="field-input"
-                type="text"
-                placeholder="https://..."
-                value={block.imageUrl || ""}
-                onChange={(event) => update(block.id, { imageUrl: event.target.value })}
-              />
-              <label className="field-label" htmlFor="imageUpload">
-                Tải ảnh lên (Từ máy tính)
-              </label>
-              <input
-                id="imageUpload"
-                className="field-input"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      if (ev.target?.result) {
-                        update(block.id, { imageUrl: ev.target.result as string });
-                      }
-                    };
-                    reader.readAsDataURL(file);
+            <label className="field-label" htmlFor="eyebrow">
+              Nhãn nhỏ
+            </label>
+            <input
+              id="eyebrow"
+              className="field-input"
+              value={block.eyebrow}
+              maxLength={100}
+              onChange={(event) =>
+                update(block.id, { eyebrow: event.target.value })
+              }
+            />
+            <TextStyleControls
+              idPrefix="eyebrow"
+              value={block.textStyles?.eyebrow}
+              onChange={(style) => updateTextStyle("eyebrow", style)}
+            />
+            <label className="field-label" htmlFor="title">
+              Tiêu đề
+            </label>
+            <input
+              id="title"
+              className="field-input"
+              value={block.title}
+              maxLength={200}
+              onChange={(event) =>
+                update(block.id, { title: event.target.value })
+              }
+            />
+            <TextStyleControls
+              idPrefix="title"
+              value={block.textStyles?.title}
+              onChange={(style) => updateTextStyle("title", style)}
+            />
+            <label className="field-label" htmlFor="description">
+              Mô tả
+            </label>
+            <textarea
+              id="description"
+              className="field-input field-textarea"
+              value={block.description}
+              maxLength={1000}
+              onChange={(event) =>
+                update(block.id, { description: event.target.value })
+              }
+              rows={4}
+            />
+            <TextStyleControls
+              idPrefix="description"
+              value={block.textStyles?.description}
+              onChange={(style) => updateTextStyle("description", style)}
+            />
+            {hasItems && (
+              <>
+                <label className="field-label" htmlFor="items">
+                  Nội dung dự phòng <small>(mỗi dòng một mục)</small>
+                </label>
+                <textarea
+                  id="items"
+                  className="field-input field-textarea items-textarea"
+                  value={block.items.join("\n")}
+                  onChange={(event) =>
+                    update(block.id, {
+                      items: event.target.value.split("\n").slice(0, 8),
+                    })
                   }
-                }}
-              />
-            </>
-          )}
-        </div>
+                  rows={5}
+                />
+              </>
+            )}
+            {block.kind === "hero" && (
+              <>
+                <label className="field-label" htmlFor="imageUrl">
+                  Hình ảnh (URL)
+                </label>
+                <input
+                  id="imageUrl"
+                  className="field-input"
+                  type="text"
+                  placeholder="https://..."
+                  value={block.imageUrl || ""}
+                  onChange={(event) => update(block.id, { imageUrl: event.target.value })}
+                />
+                <label className="field-label" htmlFor="imageUpload">
+                  Tải ảnh lên (Từ máy tính)
+                </label>
+                <input
+                  id="imageUpload"
+                  className="field-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        if (ev.target?.result) {
+                          update(block.id, { imageUrl: ev.target.result as string });
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </>
+            )}
+          </div>
         )}
         {/* ── Columns block: cấu hình số cột ── */}
         {isColumnsBlock && (
@@ -340,7 +350,7 @@ const Inspector = ({
               value={block.dataSource?.gap ?? 16}
               onChange={(e) => update(block.id, { dataSource: { ...source, gap: Number(e.target.value) } })}
             />
-            
+
             <label className="field-label" htmlFor="col-ratio">
               Tỷ lệ cột (vd: 1fr 2fr 1fr)
             </label>
@@ -503,33 +513,69 @@ const Inspector = ({
             <div className="inspector-section-heading">
               GIAO DIỆN <ChevronDown size={14} />
             </div>
-          {hasVariant && currentVariantOpts && (
-            <>
-              <label className="field-label" htmlFor="block-variant">
-                Kiểu layout
-              </label>
-              <div className="variant-options">
-                {currentVariantOpts.map((opt) => (
-                  <button
-                    key={opt.value}
-                    id={`variant-${opt.value}`}
-                    className={`variant-btn${(blockVariant || currentVariantOpts[0].value) === opt.value ? " variant-btn-active" : ""}`}
-                    onClick={() => update(block.id, { variant: opt.value })}
-                    title={opt.label}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {hasVariant && currentVariantOpts && (
+              <>
+                <label className="field-label" htmlFor="block-variant">
+                  Kiểu layout
+                </label>
+                <div className="variant-options">
+                  {currentVariantOpts.map((opt) => (
+                    <button
+                      key={opt.value}
+                      id={`variant-${opt.value}`}
+                      className={`variant-btn${(blockVariant || currentVariantOpts[0].value) === opt.value ? " variant-btn-active" : ""}`}
+                      onClick={() => update(block.id, { variant: opt.value })}
+                      title={opt.label}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {block.kind === "featured" && (
+              <div style={{ marginBottom: 16 }}>
+                <label className="field-label" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: "normal" }}>
+                  <input
+                    type="checkbox"
+                    checked={block.autoSlide || false}
+                    onChange={(e) => update(block.id, { autoSlide: e.target.checked, slideInterval: block.slideInterval ?? 3 })}
+                  />
+                  Sử dụng chuyển tin (Slideshow)
+                </label>
+                {block.autoSlide && (
+                  <div style={{ marginTop: 8 }}>
+                    <label className="field-label" htmlFor="slide-interval">
+                      Thời gian hiển thị (giây)
+                    </label>
+                    <input
+                      id="slide-interval"
+                      className="field-input"
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={block.slideInterval ?? 3}
+                      onChange={(e) => update(block.id, { slideInterval: Number(e.target.value) })}
+                    />
+                  </div>
+                )}
               </div>
-            </>
-          )}
-          <span className="field-label">Màu nhấn</span>
-          <ColorPalette
-            id="accent-color"
-            value={block.accentColor ?? defaultAccentColors[block.accent]}
-            onChange={selectAccentColor}
-          />
-        </div>
+            )}
+            <span className="field-label">Màu nhấn</span>
+            <ColorPalette
+              id="accent-color"
+              value={block.accentColor ?? defaultAccentColors[block.accent]}
+              onChange={selectAccentColor}
+            />
+            <label className="field-label" htmlFor="block-font">
+              Font chữ riêng
+            </label>
+            <FontPicker
+              id="block-font"
+              value={block.fontFamily}
+              onChange={(font) => update(block.id, { fontFamily: font || undefined })}
+            />
+          </div>
         )}
         <div className="inspector-actions">
           <button onClick={() => duplicate(block.id)}>
