@@ -1,15 +1,42 @@
 import { z } from "zod";
 
-export const blockKinds = ["hero", "news", "notice", "stats", "links", "text", "gallery"] as const;
+export const blockKinds = ["hero", "news", "notice", "stats", "links", "text", "gallery", "ticker", "featured", "video", "events", "tabs", "columns"] as const;
 export type BlockKind = (typeof blockKinds)[number];
 
 const dataSourceSchema = z.object({
   categorySlug: z.string().max(100),
   mode: z.enum(["latest", "hot"]),
   limit: z.number().int().min(1).max(12),
-  columns: z.number().int().min(1).max(4).optional(),
+  columns: z.number().int().min(1).max(6).optional(),
+  gridTemplate: z.string().max(100).optional(),
+  gap: z.number().optional(),
+  padding: z.number().optional(),
+  backgroundColor: z.string().max(50).optional(),
 });
 
+// ── Kiểu có slots (dùng recursion thủ công vì Zod z.lazy mất type inference) ──
+export type BuilderBlock = {
+  id: string;
+  kind: BlockKind;
+  title: string;
+  description: string;
+  eyebrow: string;
+  accent: "blue" | "red" | "green";
+  items: string[];
+  variant?: string;
+  dataSource?: { 
+    categorySlug: string; mode: "latest" | "hot"; limit: number; 
+    columns?: number; 
+    gridTemplate?: string; 
+    gap?: number; 
+    padding?: number; 
+    backgroundColor?: string;
+  };
+  /** Chỉ dùng cho kind="columns": mảng các cột, mỗi cột là mảng block con */
+  slots?: BuilderBlock[][];
+};
+
+// Zod schema cho validation – không cần recursive vì slots được parse thủ công
 export const blockSchema = z.object({
   id: z.string().min(1),
   kind: z.enum(blockKinds),
@@ -18,8 +45,10 @@ export const blockSchema = z.object({
   eyebrow: z.string().max(100),
   accent: z.enum(["blue", "red", "green"]),
   items: z.array(z.string().max(200)).max(8),
+  variant: z.string().max(50).optional(),
   dataSource: dataSourceSchema.optional(),
-});
+  slots: z.array(z.array(z.any())).optional(),
+}) satisfies z.ZodType<Omit<BuilderBlock, "slots"> & { slots?: unknown[][] | undefined }>;
 
 export const documentSchema = z.object({
   version: z.literal(1),
@@ -29,18 +58,23 @@ export const documentSchema = z.object({
   message: "ID của các khối phải khác nhau.",
 });
 
-export type BuilderBlock = z.infer<typeof blockSchema>;
-export type BuilderDocument = z.infer<typeof documentSchema>;
+export type BuilderDocument = { version: 1; name: string; blocks: BuilderBlock[] };
 export type BlockDataSource = z.infer<typeof dataSourceSchema>;
 
 const sourceDefaults: Record<BlockKind, BlockDataSource> = {
-  hero: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
-  news: { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
-  notice: { categorySlug: "thong-bao", mode: "latest", limit: 3, columns: 1 },
-  stats: { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
-  links: { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
-  text: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
-  gallery: { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
+  hero:     { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  news:     { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
+  notice:   { categorySlug: "thong-bao", mode: "latest", limit: 3, columns: 1 },
+  stats:    { categorySlug: "", mode: "latest", limit: 3, columns: 3 },
+  links:    { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
+  text:     { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  gallery:  { categorySlug: "", mode: "latest", limit: 4, columns: 4 },
+  ticker:   { categorySlug: "", mode: "latest", limit: 6, columns: 1 },
+  featured: { categorySlug: "", mode: "latest", limit: 5, columns: 3 },
+  video:    { categorySlug: "", mode: "latest", limit: 4, columns: 3 },
+  events:   { categorySlug: "", mode: "latest", limit: 5, columns: 2 },
+  tabs:     { categorySlug: "", mode: "latest", limit: 6, columns: 3 },
+  columns:  { categorySlug: "", mode: "latest", limit: 1, columns: 2 },
 };
 
 export function getBlockSource(block: BuilderBlock): BlockDataSource {
@@ -48,16 +82,24 @@ export function getBlockSource(block: BuilderBlock): BlockDataSource {
 }
 
 export const blockCatalog: Record<BlockKind, { label: string; description: string; category: string }> = {
-  hero: { label: "Banner nổi bật", description: "Tiêu đề và lời giới thiệu", category: "Nội dung" },
-  news: { label: "Tin tức", description: "Danh sách tin theo thẻ", category: "Nội dung" },
-  notice: { label: "Thông báo", description: "Thông tin cần chú ý", category: "Nội dung" },
-  stats: { label: "Số liệu", description: "Các chỉ số nổi bật", category: "Dữ liệu" },
-  links: { label: "Liên kết nhanh", description: "Lối tắt đến chuyên mục", category: "Điều hướng" },
-  text: { label: "Đoạn văn", description: "Nội dung văn bản đơn giản", category: "Cơ bản" },
-  gallery: { label: "Thư viện ảnh", description: "Ảnh từ cơ sở dữ liệu", category: "Nội dung" },
+  hero:     { label: "Banner nổi bật",    description: "Tiêu đề và lời giới thiệu",       category: "Trang chủ" },
+  news:     { label: "Tin tức",           description: "Danh sách tin theo thẻ",           category: "Tin tức" },
+  notice:   { label: "Thông báo",         description: "Thông tin cần chú ý",              category: "Tin tức" },
+  featured: { label: "Tin nổi bật",       description: "Tin lớn + danh sách tin nhỏ",      category: "Tin tức" },
+  tabs:     { label: "Tab chuyên mục",    description: "Tin tức theo nhiều tab",            category: "Tin tức" },
+  ticker:   { label: "Dải tin nhanh",     description: "Tin tức chạy ngang",               category: "Tin tức" },
+  video:    { label: "Video nổi bật",     description: "Khối video và danh sách",          category: "Đa phương tiện" },
+  gallery:  { label: "Thư viện ảnh",      description: "Ảnh từ cơ sở dữ liệu",            category: "Đa phương tiện" },
+  events:   { label: "Lịch sự kiện",      description: "Danh sách sự kiện sắp tới",        category: "Tiện ích" },
+  stats:    { label: "Số liệu",           description: "Các chỉ số nổi bật",               category: "Tiện ích" },
+  links:    { label: "Liên kết nhanh",    description: "Lối tắt đến chuyên mục",           category: "Điều hướng" },
+  text:     { label: "Đoạn văn",          description: "Nội dung văn bản đơn giản",        category: "Cơ bản" },
+  columns:  { label: "Lưới cột",          description: "Chia thành nhiều cột kéo thả",     category: "Cơ bản" },
 };
 
-const defaults: Record<BlockKind, Omit<BuilderBlock, "id" | "kind">> = {
+type BlockDefaults = Omit<BuilderBlock, "id" | "kind">;
+
+const defaults: Record<BlockKind, BlockDefaults> = {
   hero: {
     eyebrow: "CỔNG THÔNG TIN ĐIỆN TỬ",
     title: "Kết nối tri thức, kiến tạo tương lai",
@@ -114,6 +156,55 @@ const defaults: Record<BlockKind, Omit<BuilderBlock, "id" | "kind">> = {
     items: ["Lớp học sáng tạo", "Thư viện tri thức", "Chuyển đổi số", "Hoạt động giáo dục"],
     dataSource: sourceDefaults.gallery,
   },
+  ticker: {
+    eyebrow: "TIN NHANH",
+    title: "Dải tin tức nhanh",
+    description: "Tin tức mới nhất chạy ngang trang.",
+    accent: "red",
+    items: ["Bộ GD&ĐT công bố lịch thi THPT 2026", "Hội nghị đổi mới giáo dục toàn quốc", "Triển khai sách giáo khoa mới từ năm học 2026-2027", "Khai giảng năm học mới tại 63 tỉnh thành", "Thi học sinh giỏi quốc gia kết quả xuất sắc", "Chương trình học bổng sinh viên ưu tú 2026"],
+    dataSource: sourceDefaults.ticker,
+  },
+  featured: {
+    eyebrow: "TIN NỔI BẬT",
+    title: "Tin tức nổi bật trong tuần",
+    description: "Những thông tin quan trọng được chọn lọc.",
+    accent: "blue",
+    items: ["Đổi mới chương trình giáo dục phổ thông", "Hội nghị tổng kết năm học 2025-2026", "Kết quả kỳ thi tốt nghiệp THPT", "Triển khai dạy học trực tuyến toàn quốc", "Chính sách hỗ trợ học sinh vùng khó khăn"],
+    dataSource: sourceDefaults.featured,
+  },
+  video: {
+    eyebrow: "VIDEO",
+    title: "Video hoạt động",
+    description: "Các video ghi lại hoạt động giáo dục tiêu biểu.",
+    accent: "blue",
+    items: ["Lễ khai giảng năm học mới 2026", "Hội thảo chuyển đổi số trong giáo dục", "Cuộc thi học sinh giỏi toán quốc gia", "Giao lưu văn hóa các trường học", "Hoạt động thể thao học đường"],
+    dataSource: sourceDefaults.video,
+  },
+  events: {
+    eyebrow: "SỰ KIỆN",
+    title: "Lịch sự kiện sắp tới",
+    description: "Các sự kiện và hội thảo trong thời gian tới.",
+    accent: "green",
+    items: ["Hội nghị tổng kết năm học 2025-2026", "Lễ trao học bổng tài năng", "Tập huấn giáo viên toàn quốc", "Triển lãm giáo dục quốc tế", "Hội thảo ứng dụng AI trong giáo dục"],
+    dataSource: sourceDefaults.events,
+  },
+  tabs: {
+    eyebrow: "CHUYÊN MỤC",
+    title: "Tin theo chuyên mục",
+    description: "Xem tin theo từng chuyên mục riêng biệt.",
+    accent: "blue",
+    items: ["Mới nhất", "Nổi bật", "Giáo dục", "Xã hội"],
+    dataSource: sourceDefaults.tabs,
+  },
+  columns: {
+    eyebrow: "BỐ CỤC",
+    title: "Khu vực nhiều cột",
+    description: "Kéo thả các khối vào từng cột để tạo bố cục đa dạng.",
+    accent: "blue",
+    items: [],
+    dataSource: sourceDefaults.columns,
+    slots: [[], []], // 2 cột mặc định
+  },
 };
 
 export function makeBlock(kind: BlockKind): BuilderBlock {
@@ -124,8 +215,8 @@ export const starterDocument: BuilderDocument = {
   version: 1,
   name: "Trang chủ Cổng thông tin",
   blocks: [
-    { id: "demo-hero", kind: "hero", ...defaults.hero },
-    { id: "demo-news", kind: "news", ...defaults.news },
+    { id: "demo-hero",  kind: "hero",  ...defaults.hero },
+    { id: "demo-news",  kind: "news",  ...defaults.news },
     { id: "demo-stats", kind: "stats", ...defaults.stats },
     { id: "demo-links", kind: "links", ...defaults.links },
   ],

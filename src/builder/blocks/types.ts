@@ -7,6 +7,7 @@ export type BlockViewProps = {
   block: BuilderBlock;
   articles?: Article[];
   entries?: ContentEntry[];
+  isEditor?: boolean;
 };
 
 export function gridColumnsStyle(block: BuilderBlock): CSSProperties {
