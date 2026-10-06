@@ -31,7 +31,7 @@ function restoreNode(element: Element, original: Element): void {
     const value = original.getAttribute(name);
     if (value === null) element.removeAttribute(name); else element.setAttribute(name, value);
   }
-  // Tệp dành cho người chỉnh HTML chỉ lưu cấu hình một lần ở metadata cuối trang.
+  // Cấu hình không có trong fragment được giữ từ bố cục hiện tại hoặc metadata tệp cũ.
   const settings = original.hasAttribute("data-builder-page") ? pageSettings : original.hasAttribute("data-builder-block-id") ? blockSettings : [];
   for (const name of settings) if (!element.hasAttribute(name) && original.hasAttribute(name)) element.setAttribute(name, original.getAttribute(name) ?? "");
   // Block được đối chiếu riêng theo ID; thứ tự block và vị trí trong slot có thể thay đổi.

@@ -50,7 +50,7 @@ builder/
 | `builderApi.ts` | Gọi các API trang, chuyên mục, bài viết và nội dung động. |
 | `domain/` | Schema JSON, chuyển dữ liệu cũ, cấu hình mặc định, danh mục block và thao tác với cây dữ liệu. |
 | `renderer/` | Hiển thị block và khung cổng; registry selector và chuyển appearance thành CSS. |
-| `html/` | Xuất/nhập HTML, cấu hình HTML thụ động, CSS, contract và HTML xem trước. Các API dùng DOM chạy trong trình duyệt. |
+| `html/` | Xuất HTML block, nhập lại theo bố cục hiện tại, đọc định dạng cũ, CSS, contract và HTML xem trước. Các API dùng DOM chạy trong trình duyệt. |
 | `editor/` | Zustand store, adapter biên tập component và giao diện canvas/palette/inspector/HTML editor. |
 
 ## Cách sử dụng và phụ thuộc

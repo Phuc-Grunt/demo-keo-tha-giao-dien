@@ -43,16 +43,17 @@ const HtmlEditor = ({ initialSession, initialBlockId, onApply, onClose }: HtmlEd
     return () => window.clearTimeout(timer);
   }, [session, sources, live]);
 
-  /** Chỉ nhập HTML template hợp lệ, sau đó tách lại các component và CSS riêng. */
+  /** Ghép HTML block với bản sửa hợp lệ hiện tại hoặc đọc template cũ có cấu hình đầy đủ. */
   const importFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = event.target.files?.[0]; event.target.value = ""; if (!file) return;
     if (file.size > MAX_TEMPLATE_HTML_SIZE) { setError("Tệp HTML vượt quá 10 MB."); return; }
     try {
-      const next = createBlockEditorSession(await file.text()); compiled.current = null; setValid(false);
+      const text = await file.text();
+      const next = createBlockEditorSession(text, compiled.current?.document ?? session.document); compiled.current = null; setValid(false);
       setSession(next); setSources(next.sources); setSelectedId(next.entries[0]?.id ?? null); setError(""); setPreview(previewHtml(next.template));
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Không thể đọc HTML."); }
   };
-  /** Tệp tải dùng style inline và cấu hình HTML thụ động, dùng được cho lần nhập tiếp theo. */
+  /** Chỉ tải các block cùng style riêng; nhập lại dựa trên bố cục đang mở. */
   const download = (): void => {
     if (!compiled.current) return;
     try {
@@ -68,12 +69,12 @@ const HtmlEditor = ({ initialSession, initialBlockId, onApply, onClose }: HtmlEd
       <div className="html-editor-title"><Code2 size={20} /><strong>Chỉnh HTML / CSS</strong><span>Chọn block · Chỉnh mã · Xem trực tiếp</span></div>
       <div className="html-editor-actions">
         <button className="outline-button" onClick={() => fileInput.current?.click()}><Upload size={15} /> Nhập HTML</button>
-        <button className="outline-button" disabled={!valid} onClick={download} title="Tải tất cả block trong một tệp HTML để mở hoặc nhập lại"><Download size={15} /> Xuất HTML</button>
+        <button className="outline-button" disabled={!valid} onClick={download} title="Chỉ tải HTML các block và style riêng; nhập lại vào bố cục đang mở"><Download size={15} /> Xuất HTML block</button>
         <button className="primary-button" disabled={!valid} onClick={() => { if (compiled.current) onApply(compiled.current.document); }}><Check size={15} /> Áp dụng vào builder</button>
         <button className="outline-button" onClick={onClose}><X size={15} /> Đóng</button>
       </div>
     </header>
-    <div className="html-editor-help">Nhấp vào block để chỉnh nội dung và giao diện. Xuất HTML lưu tất cả block trong một tệp; Nhập HTML mở lại để tiếp tục chỉnh.</div>
+    <div className="html-editor-help">Xuất HTML block chỉ lưu các block và style riêng. Sau khi sửa tệp, nhập lại vào bố cục này rồi nhấn Áp dụng. Dùng Xuất JSON để sao lưu đầy đủ hoặc chuyển bố cục sang nơi khác.</div>
     <div className="html-editor-panes">
       <BlockList entries={session.entries} sources={sources} initialSources={session.sources} selectedId={selectedId} onSelect={setSelectedId} />
       <BlockCodePane title={selected?.label ?? ""} source={selectedId ? sources[selectedId] : undefined} tab={tab} selectors={selectedId ? blockEditorSelectors(session, selectedId) : []} onTabChange={setTab} onChange={updateSource} />

@@ -9,9 +9,9 @@ import { blockAppearanceCss, partDeclarations, textDeclarations, templateSelecto
 import { readPresentation, utilityCss } from "./htmlStyle";
 import { templateStyles } from "./htmlTemplateStyles";
 import { hiddenTemplateAttributes, restoreTemplateContract } from "./htmlTemplateContract";
-import { expandReadableMarkers, formatReadableHtml, prepareReadableHtml, INLINE_HTML_FORMAT, READABLE_HTML_FORMAT } from "./htmlReadableFormat";
+import { expandReadableMarkers, formatReadableBlocks, prepareReadableHtml, INLINE_HTML_FORMAT, READABLE_HTML_FORMAT } from "./htmlReadableFormat";
 import { inlineTemplateStyles, normalizeInlineStyles } from "./htmlInlineStyles";
-import { appendInlineSettings, readInlineSettings } from "./htmlInlineSettings";
+import { readInlineSettings } from "./htmlInlineSettings";
 
 export const MAX_TEMPLATE_HTML_SIZE = 10_000_000;
 const fieldListSchema = z.array(z.enum(textTargets));
@@ -195,20 +195,18 @@ export function documentToEditorHtml(input: BuilderDocument): string {
   } finally { reactRoot.unmount(); mount.remove(); }
 }
 
-/** JSON → HTML từng block có style tại thẻ, không xuất script hoặc khối JSON. */
+/** Chỉ xuất markup các block và style riêng; cấu hình đầy đủ tiếp tục nằm trong builder. */
 export function documentToHtml(input: BuilderDocument): string {
   const normalized = documentSchema.parse(input);
   const parsed = new DOMParser().parseFromString(documentToEditorHtml(normalized), "text/html");
-  inlineTemplateStyles(parsed);
-  appendInlineSettings(parsed, normalized);
+  const container = parsed.querySelector<HTMLElement>("[data-builder-page-blocks]");
+  if (!container) throw new Error("Không thể lấy các block để xuất HTML.");
+  const blocks = directBlocks(container);
+  if (!blocks.length) throw new Error("Trang chưa có block để xuất HTML.");
+  parsed.body.replaceChildren(...blocks);
   for (const element of Array.from(parsed.querySelectorAll("*"))) for (const name of hiddenTemplateAttributes) element.removeAttribute(name);
-  parsed.querySelector("[data-builder-page]")?.setAttribute("data-builder-format", INLINE_HTML_FORMAT);
-  prepareReadableHtml(parsed, true);
-  for (const style of Array.from(parsed.querySelectorAll("style"))) {
-    const marker = style.hasAttribute("data-builder-template-css") ? "data-builder-template-css" : "data-builder-responsive-css";
-    style.setAttribute(marker, stylesheetHash(style.textContent ?? ""));
-  }
-  return formatReadableHtml(parsed, true);
+  prepareReadableHtml(parsed, false, true);
+  return formatReadableBlocks(parsed);
 }
 
 /** Xuống dòng giữa các tag, bảo toàn tuyệt đối khoảng trắng trong field, SVG và metadata. */
@@ -345,11 +343,13 @@ function readBlock(root: HTMLElement, seeds?: ReadonlyMap<string, BuilderBlock>)
 }
 
 /** HTML mẫu đã chỉnh → JSON v2; chỉ trả về khi toàn bộ tài liệu hợp lệ. */
-export function htmlToDocument(html: string): BuilderDocument {
+export function htmlToDocument(html: string, currentDocument?: BuilderDocument): BuilderDocument {
   if (html.length > MAX_TEMPLATE_HTML_SIZE) throw new Error("Tệp HTML vượt quá 10 MB.");
   const parsed = new DOMParser().parseFromString(html, "text/html");
-  if (parsed.querySelector(`[data-builder-format="${READABLE_HTML_FORMAT}"],[data-builder-format="${INLINE_HTML_FORMAT}"]`)) expandReadableMarkers(parsed);
+  const fragments = !parsed.querySelector("[data-builder-page],[data-page]") && !!parsed.querySelector("[data-id][data-block],[data-builder-block-id][data-builder-block-kind]");
+  if (fragments || parsed.querySelector(`[data-builder-format="${READABLE_HTML_FORMAT}"],[data-builder-format="${INLINE_HTML_FORMAT}"]`)) expandReadableMarkers(parsed);
   validatePassiveHtml(parsed);
+  if (fragments) return blockFragmentsToDocument(parsed, currentDocument);
   if (parsed.querySelector(`[data-builder-format="${INLINE_HTML_FORMAT}"]`)) return inlineHtmlToDocument(parsed);
   const metadata = parsed.querySelectorAll("script[data-builder-document]"); if (metadata.length !== 1) throw new Error("Thiếu hoặc trùng metadata tài liệu. Hãy dùng HTML xuất từ builder.");
   const seed = normalizedDocumentSchema.parse(JSON.parse(metadata[0].textContent ?? ""));
@@ -377,6 +377,45 @@ export function htmlToDocument(html: string): BuilderDocument {
   if (!responsiveStyles || responsiveStyles.getAttribute("data-builder-responsive-css") !== stylesheetHash(responsiveStyles.textContent ?? "")) throw new Error("CSS được sinh từ cấu hình đã thay đổi. Sửa style trên part/field hoặc responsive trong metadata của block.");
   if (parsed.querySelectorAll("style").length !== 2) throw new Error("Template chỉ hỗ trợ hai stylesheet được sinh sẵn. Sửa inline style trên part/field.");
   return readDocumentPage(page, containers[0], seed, seeds);
+}
+
+/** Ghép fragment theo ID vào bố cục đang mở, giữ các cấu hình và block không có trong tệp. */
+function blockFragmentsToDocument(parsed: Document, currentDocument?: BuilderDocument): BuilderDocument {
+  if (!currentDocument) throw new Error("HTML block cần bố cục gốc để nhập lại. Mở bố cục hoặc nhập JSON gốc trước.");
+  if (parsed.head.children.length || parsed.querySelector("script,style,template") || parsed.documentElement.attributes.length || parsed.body.attributes.length) throw new Error("Tệp HTML block chỉ chứa các block, không kèm khung trang, CSS chung hoặc cấu hình.");
+  const fragments = directBlocks(parsed.body);
+  if (!fragments.length || fragments.length !== parsed.body.children.length || Array.from(parsed.body.childNodes).some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())) throw new Error("Giữ các block trực tiếp trong tệp, không thêm wrapper hoặc nội dung ngoài block.");
+  const seed = documentSchema.parse(currentDocument);
+  const baseline = new DOMParser().parseFromString(documentToEditorHtml(seed), "text/html");
+  normalizeInlineStyles(parsed); normalizeInlineStyles(baseline);
+  const originalPage = baseline.querySelector<HTMLElement>("[data-builder-page]");
+  if (!originalPage) throw new Error("Không thể khôi phục cấu trúc block.");
+  markStaticContract(originalPage);
+  const page = originalPage.cloneNode(true);
+  if (!(page instanceof HTMLElement)) throw new Error("Không thể sao chép bố cục hiện tại.");
+  const originals = new Map(Array.from(originalPage.querySelectorAll<HTMLElement>("[data-builder-block-id]")).map((block) => [block.getAttribute("data-builder-block-id") ?? "", block]));
+  const incoming = new Set<string>();
+  for (const block of Array.from(parsed.querySelectorAll<HTMLElement>("[data-builder-block-id]"))) {
+    const id = block.getAttribute("data-builder-block-id") ?? "";
+    if (incoming.has(id)) throw new Error(`Khối ${id}: ID bị trùng trong tệp HTML.`);
+    if (!originals.has(id)) throw new Error(`Khối ${id}: không có trong bố cục đang mở. Mở bố cục hoặc nhập JSON gốc trước.`);
+    incoming.add(id);
+  }
+  for (const fragment of fragments) {
+    const id = fragment.getAttribute("data-builder-block-id");
+    const target = Array.from(page.querySelectorAll<HTMLElement>("[data-builder-block-id]")).find((block) => block.getAttribute("data-builder-block-id") === id);
+    if (!target) throw new Error(`Khối ${id}: vị trí block không hợp lệ.`);
+    target.replaceWith(fragment);
+  }
+  const container = page.querySelector<HTMLElement>("[data-builder-page-blocks]");
+  if (!container) throw new Error("Không thể khôi phục vùng chứa block.");
+  // Khi tệp chứa đủ các block cấp trang, thứ tự trong tệp là thứ tự mới của trang.
+  const rootIds = new Set(seed.blocks.map((block) => block.id));
+  if (fragments.length === rootIds.size && fragments.every((block) => rootIds.has(block.getAttribute("data-builder-block-id") ?? ""))) container.append(...fragments);
+  const resultIds = Array.from(page.querySelectorAll("[data-builder-block-id]")).map((block) => block.getAttribute("data-builder-block-id") ?? "");
+  if (resultIds.length !== originals.size || new Set(resultIds).size !== originals.size || resultIds.some((id) => !originals.has(id))) throw new Error("Giữ các block con và ID đã có. Thêm hoặc xóa block bằng builder.");
+  restoreTemplateContract(page, originalPage); validateStaticContract(page);
+  return readDocumentPage(page, container, seed, new Map(flattenBlocks(seed.blocks).map((block) => [block.id, block])));
 }
 
 /** Tệp v3 dùng cấu hình HTML thụ động; contract nền được tái tạo trước khi đọc phần người dùng sửa. */
