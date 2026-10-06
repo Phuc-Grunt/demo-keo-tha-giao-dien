@@ -2,6 +2,10 @@
 
 Next.js, TypeScript và React. Trang biên tập ở `/`; trang đã xuất bản ở `/site`.
 
+## Cấu trúc builder
+
+Mã trong `src/builder/` được chia theo trách nhiệm: `domain/` chứa schema và mô hình dữ liệu, `renderer/` chứa các block hiển thị, `html/` chứa bộ xuất/nhập HTML, `editor/` chứa store và giao diện chỉnh sửa. `BuilderApp.tsx` điều phối màn builder; `builderApi.ts` xử lý gọi API. Xem [hướng dẫn cấu trúc builder](src/builder/README.md).
+
 ## JSON v2 và HTML Editor
 
 Tài liệu builder được chuẩn hóa sang JSON v2, tách nội dung, nguồn dữ liệu, bố cục, style, theme và hành vi. JSON v1 được chuyển tự động khi nhập, đọc DB hoặc khôi phục bản nháp cục bộ.
@@ -29,7 +33,7 @@ Nút **HTML Editor** mở màn sửa theo từng component: chọn block, chỉn
 - `GET /api/page` đọc bản đã xuất bản. `GET /api/page?draft=1`, `PUT /api/page` và `POST /api/page/publish` tải, lưu và xuất bản mà không cần mã trong bản demo.
 - `GET /api/categories` và `GET /api/articles?category=tin-tuc&mode=latest&limit=3` trả dữ liệu từ Supabase. `mode=hot` lấy các bài đánh dấu nổi bật, sắp xếp theo lượt xem.
 - `GET /api/content?kind=gallery&limit=4` trả nội dung cho Banner (`hero`), Số liệu (`stat`), Liên kết (`link`), Đoạn văn (`text`) và Thư viện ảnh (`gallery`). URL ảnh nằm trong `articles.image_url` hoặc `content_entries.image_url`; demo trỏ tới các SVG trong `public/demo-images`. Có thể thay bằng URL công khai của Supabase Storage.
-- Mỗi loại khối có component React riêng trong `src/builder/blocks/`. `BlockRenderer` chỉ chọn component theo `kind`. Bố cục và lựa chọn nguồn dữ liệu lưu trong JSON của bảng `pages`; nội dung được truy vấn từ các bảng dữ liệu khi hiển thị.
+- Mỗi loại khối có component React riêng trong `src/builder/renderer/blocks/`. `BlockRenderer` chỉ chọn component theo `kind`. Bố cục và lựa chọn nguồn dữ liệu lưu trong JSON của bảng `pages`; nội dung được truy vấn từ các bảng dữ liệu khi hiển thị.
 - Trình biên tập còn lưu bản nháp cục bộ trong trình duyệt để tránh mất công khi DB chưa sẵn sàng. Nếu đã có bản cục bộ, trang sẽ giữ bản đó cho tới khi bạn chủ động nhấn **Tải bản nháp từ DB**.
 
 Ai truy cập được trình biên tập của bản demo cũng có thể sửa và xuất bản trang. Chỉ chạy cấu hình này trong môi trường tin cậy; khi làm sản phẩm thật, thêm xác thực và phân quyền theo người dùng.

@@ -114,7 +114,7 @@ Với block `columns`, số slot xác định số cột; `layout.gridTemplateCo
 
 ## Hai hàm chuyển đổi
 
-Các hàm trong `src/builder/htmlCodec.tsx` chạy trong trình duyệt, dùng DOM và renderer React hiện có:
+Các hàm trong `src/builder/html/htmlCodec.tsx` chạy trong trình duyệt, dùng DOM và renderer React hiện có:
 
 ```ts
 const normalized = documentSchema.parse(input);
@@ -127,9 +127,9 @@ const editedDocument = htmlToDocument(editedHtml);
 - `documentToEditorHtml`: tạo template nội bộ với contract đầy đủ cho màn sửa component, cũng chỉ dùng một metadata chung.
 - `previewHtml`: tạo HTML xem trước trong iframe sandbox, loại bỏ script và nội dung chủ động.
 
-`blockHtmlEditor.ts` quản lý lớp biên tập component: tách markup và CSS, khôi phục contract ẩn theo `data-node`, ghép các bản sửa vào template rồi dùng lại `htmlToDocument`. Không lưu chuỗi CSS tùy ý vào JSON.
+`src/builder/editor/blockHtmlEditor.ts` quản lý lớp biên tập component: tách markup và CSS, khôi phục contract ẩn theo `data-node`, ghép các bản sửa vào template rồi dùng lại `htmlToDocument`. Không lưu chuỗi CSS tùy ý vào JSON.
 
-`HtmlTemplate.tsx` chỉ kết xuất vùng block. `htmlTemplateStyles.ts` lấy CSS cần dùng từ CSSOM. `htmlTemplateContract.ts` khôi phục nền class/style và kiểm tra cấu trúc khi nhập tệp gọn; các phần không có ánh xạ vẫn được phát hiện trước khi áp dụng.
+Các tệp `HtmlTemplate.tsx`, `htmlTemplateStyles.ts`, `htmlTemplateContract.ts`, `htmlReadableFormat.ts`, `htmlInlineStyles.ts`, `htmlInlineSettings.ts` và `htmlStyle.ts` nằm trong `src/builder/html/`. `HtmlTemplate.tsx` chỉ kết xuất vùng block. `htmlTemplateStyles.ts` lấy CSS cần dùng từ CSSOM. `htmlTemplateContract.ts` khôi phục nền class/style và kiểm tra cấu trúc khi nhập tệp gọn; các phần không có ánh xạ vẫn được phát hiện trước khi áp dụng.
 
 `htmlReadableFormat.ts` rút ngắn marker, định dạng HTML/CSS và thêm nhãn block cho tệp xuất. Import mở rộng alias và lấy cấu hình wrapper còn thiếu từ metadata chung; các chữ ký CSS được tính lại sau khi định dạng và đổi selector.
 
@@ -154,7 +154,7 @@ Template xuất dùng nội dung cấu hình/dự phòng, để việc nhập l�
 | `data-builder-document` | Metadata JSON của editor nội bộ và tệp v1/v2. |
 | `data-builder-block-config` | Chỉ đọc để tương thích tệp HTML cũ. |
 
-Các tên part được đăng ký theo loại block trong `appearance.ts`. Nội dung/style trên DOM có marker được ưu tiên khi nhập; metadata giữ những cấu hình không xuất hiện trên DOM. Giữ các marker nền, cấu trúc template và hai stylesheet được sinh sẵn.
+Các tên part được đăng ký theo loại block trong `src/builder/renderer/appearance.ts`. Nội dung/style trên DOM có marker được ưu tiên khi nhập; metadata giữ những cấu hình không xuất hiện trên DOM. Giữ các marker nền, cấu trúc template và hai stylesheet được sinh sẵn.
 
 Bảng trên gồm marker nội bộ và cấu hình tệp. Trong `blocks-v2`/`blocks-v3`, các marker nội dung tương ứng là `data-page`, `data-blocks`, `data-id`/`data-block`, `data-field`, `data-part`, `data-item`/`data-item-field`, `data-slot`. Bộ đọc mở rộng marker ngắn trước khi khôi phục contract. V2 dùng script `data-builder-document`; v3 dùng template `data-builder-settings` và không xuất script.
 

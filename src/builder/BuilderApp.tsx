@@ -37,9 +37,9 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { BlockRenderer } from "./BlockRenderer";
+import { BlockRenderer } from "./renderer/BlockRenderer";
 import { Button } from "@/components/ui/button";
-import { PortalChrome } from "./PortalChrome";
+import { PortalChrome } from "./renderer/PortalChrome";
 import {
   blockCatalog,
   blockKinds,
@@ -47,22 +47,22 @@ import {
   documentSchema,
   getPageWidth,
   flattenBlocks,
-} from "./model";
+} from "./domain/model";
 import {
   PageWidthControl,
   FontPicker,
-} from "./InspectorControls";
-import { useBuilderStore } from "./store";
+} from "./editor/components/inspector/InspectorControls";
+import { useBuilderStore } from "./editor/store";
 import * as builderApi from "./builderApi";
 import type { BlockData } from "./builderApi";
 import type { Category } from "@/lib/supabase";
-import EditorCanvas from "./components/EditorCanvas";
-import Inspector from "./components/Inspector";
-import PaletteItem from "./components/PaletteItem";
-import paletteIcons from "./components/paletteIcons";
-import HtmlEditor from "./components/HtmlEditor";
-import { documentToEditorHtml, MAX_TEMPLATE_HTML_SIZE } from "./htmlCodec";
-import { createBlockEditorSession, type BlockEditorSession } from "./blockHtmlEditor";
+import EditorCanvas from "./editor/components/EditorCanvas";
+import Inspector from "./editor/components/inspector/Inspector";
+import PaletteItem from "./editor/components/PaletteItem";
+import paletteIcons from "./editor/components/paletteIcons";
+import HtmlEditor from "./editor/components/htmlEditor/HtmlEditor";
+import { documentToEditorHtml, MAX_TEMPLATE_HTML_SIZE } from "./html/htmlCodec";
+import { createBlockEditorSession, type BlockEditorSession } from "./editor/blockHtmlEditor";
 
 /** Điều phối trạng thái trình biên tập, dữ liệu API và các thao tác người dùng. */
 const BuilderApp = () => {
