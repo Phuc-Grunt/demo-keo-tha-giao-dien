@@ -74,8 +74,8 @@ function readableCss(source: string): string {
   flush(); return lines.join("\n");
 }
 
-/** Đánh dấu các vùng người dùng cần sửa; cấu hình và CSS tự sinh có mục riêng ở cuối tệp. */
-export function prepareReadableHtml(parsed: Document, inline = false): void {
+/** Rút gọn marker và đặt nhãn block; fragment bỏ hướng dẫn/cấu hình ngoài component. */
+export function prepareReadableHtml(parsed: Document, inline = false, blocksOnly = false): void {
   const blocks = Array.from(parsed.querySelectorAll<HTMLElement>("[data-builder-block-id]"));
   blocks.forEach((block, index) => {
     const title = Array.from(block.querySelectorAll('[data-builder-field="title"]')).find((field) => field.closest("[data-builder-block-id]") === block)?.textContent;
@@ -83,7 +83,7 @@ export function prepareReadableHtml(parsed: Document, inline = false): void {
     block.before(parsed.createComment(` BLOCK ${label} `));
     block.after(parsed.createComment(` HẾT BLOCK ${index + 1} `));
   });
-  parsed.body.prepend(parsed.createComment("\nCÁCH CHỈNH SỬA\n- Nội dung: sửa chữ trong các thẻ data-field hoặc data-item-field.\n- Giao diện: thêm/sửa style trên vùng data-part hoặc thẻ data-field.\n- Giữ data-id, data-block và các marker để nhập lại vào builder.\n" + (inline ? "- Nguồn tin và slideshow: chỉnh data-source, data-limit, data-autoplay trên block.\n- Giữ vùng template cấu hình và CSS responsive/trạng thái ở cuối tệp.\n" : "- Nguồn dữ liệu và slideshow được chỉnh trong builder.\n")));
+  if (!blocksOnly) parsed.body.prepend(parsed.createComment("\nCÁCH CHỈNH SỬA\n- Nội dung: sửa chữ trong các thẻ data-field hoặc data-item-field.\n- Giao diện: thêm/sửa style trên vùng data-part hoặc thẻ data-field.\n- Giữ data-id, data-block và các marker để nhập lại vào builder.\n" + (inline ? "- Nguồn tin và slideshow: chỉnh data-source, data-limit, data-autoplay trên block.\n- Giữ vùng template cấu hình và CSS responsive/trạng thái ở cuối tệp.\n" : "- Nguồn dữ liệu và slideshow được chỉnh trong builder.\n")));
   parsed.querySelector("script[data-builder-document]")?.before(parsed.createComment(" CẤU HÌNH KHÔI PHỤC — hệ thống quản lý khi xuất/nhập "));
   parsed.querySelector("template[data-builder-settings]")?.before(parsed.createComment(" CẤU HÌNH KHÔNG HIỂN THỊ — giữ các giá trị cần khôi phục khi nhập lại "));
   parsed.querySelector("style[data-builder-template-css]")?.before(parsed.createComment(inline ? " CSS DÙNG CHUNG: RESET, RESPONSIVE, HOVER VÀ ANIMATION — style component nằm ngay tại các thẻ bên trên " : " CSS NỀN TỰ SINH — sửa style của block ở vùng HTML bên trên "));
@@ -146,4 +146,13 @@ function readableElement(element: Element, depth: number, inline: boolean): stri
 /** HTML dành cho người sửa trực tiếp: mỗi block có nhãn, thẻ có indent và thuộc tính dài xuống dòng. */
 export function formatReadableHtml(parsed: Document, inline = false): string {
   return `<!DOCTYPE html>\n${readableElement(parsed.documentElement, 0, inline)}\n`;
+}
+
+/** Chỉ ghi các component và nhãn của chúng, không thêm khung tài liệu HTML. */
+export function formatReadableBlocks(parsed: Document): string {
+  return Array.from(parsed.body.childNodes).flatMap((node): string[] => {
+    if (node instanceof Element) return [readableElement(node, 0, true)];
+    if (node.nodeType === Node.COMMENT_NODE) return [readableComment(node.textContent ?? "", 0)];
+    return [];
+  }).join("\n\n") + "\n";
 }

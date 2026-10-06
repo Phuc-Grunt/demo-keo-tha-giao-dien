@@ -6,7 +6,7 @@ import type { BuilderDocument } from "../domain/model";
 
 interface HtmlTemplateProps { document: BuilderDocument }
 
-/** Tệp trao đổi chỉ chứa vùng block; khung cổng thông tin được ứng dụng ghép khi hiển thị. */
+/** Kết xuất vùng block cho editor/codec; bộ xuất chỉ lấy các component bên trong main. */
 const HtmlTemplate = ({ document }: HtmlTemplateProps) => {
   const style: CSSProperties & Record<`--${string}`, string> = {
     ...(document.theme.primaryColor ? { "--theme-color": document.theme.primaryColor } : {}),

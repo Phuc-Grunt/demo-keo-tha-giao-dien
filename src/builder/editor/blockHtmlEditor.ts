@@ -104,9 +104,9 @@ function projectBlock(wrapper: HTMLElement, block: BuilderBlock): ProjectedBlock
   const css = targets.filter((target) => Object.keys(target.declarations).length).map((target) => `${target.selector} {\n${Object.entries(target.declarations).map(([name, value]) => `  ${name}: ${value};`).join("\n")}\n}`).join("\n\n");
   return { source: { html: formatFragment(root, nodes), css }, contract: { nodes, targets } };
 }
-/** Nhập HTML toàn trang một lần, giữ metadata/CSS nền ngoài các ô soạn thảo. */
-export function createBlockEditorSession(html: string): BlockEditorSession {
-  const normalized = htmlToDocument(html); const template = documentToEditorHtml(normalized);
+/** Nhập template cũ hoặc ghép HTML block với bố cục hiện tại rồi tách các component để sửa. */
+export function createBlockEditorSession(html: string, currentDocument?: BuilderDocument): BlockEditorSession {
+  const normalized = htmlToDocument(html, currentDocument); const template = documentToEditorHtml(normalized);
   const parsed = new DOMParser().parseFromString(template, "text/html");
   const sources: BlockEditorSources = {}; const contracts: Record<string, BlockContract> = {}; const entries: BlockEditorEntry[] = [];
   const visit = (blocks: BuilderBlock[], depth: number): void => {

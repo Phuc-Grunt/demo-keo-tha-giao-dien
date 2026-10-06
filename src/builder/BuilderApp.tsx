@@ -238,7 +238,7 @@ const BuilderApp = () => {
       const isHtml = /\.html?$/i.test(file.name) || file.type === "text/html";
       if (file.size > (isHtml ? MAX_TEMPLATE_HTML_SIZE : 3_000_000)) throw new Error(`Tệp vượt quá ${isHtml ? 10 : 3} MB.`);
       const text = await file.text();
-      if (isHtml) { setHtmlSession(createBlockEditorSession(text)); return; }
+      if (isHtml) { setHtmlSession(createBlockEditorSession(text, document)); return; }
       const parsed = documentSchema.safeParse(JSON.parse(text));
       if (!parsed.success)
         throw new Error("Tệp JSON không đúng cấu trúc của demo.");
