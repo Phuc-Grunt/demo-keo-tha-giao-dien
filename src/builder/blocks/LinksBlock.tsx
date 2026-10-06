@@ -14,12 +14,12 @@ const LinksBlock = ({ block, entries }: BlockViewProps) => {
     fallbackItems(block).map((title, index) => ({
       id: String(index),
       title,
-      href: undefined,
+      href: safeHref(block.content.items[index]?.href),
     }));
   return (
     <section
       id={block.id}
-      className={`render-block content-section links-section accent-${block.accent}`}
+      className={`render-block content-section links-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} />
       <div className="links-grid" style={gridColumnsStyle(block)}>

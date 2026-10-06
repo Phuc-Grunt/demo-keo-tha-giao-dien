@@ -26,7 +26,7 @@ const EventsBlock = ({ block, articles }: BlockViewProps) => {
   /* ────── CARDS variant ────── */
   if (variant === "cards") {
     return (
-      <section id={block.id} className={`render-block content-section events-section accent-${block.accent}`}>
+      <section id={block.id} className={`render-block content-section events-section accent-${block.theme.accent}`}>
         <SectionHeading block={block} showViewAll />
         <div className="event-cards" style={gridColumnsStyle(block)}>
           {items.map((item) => (
@@ -51,7 +51,7 @@ const EventsBlock = ({ block, articles }: BlockViewProps) => {
 
   /* ────── TIMELINE variant (default) ────── */
   return (
-    <section id={block.id} className={`render-block content-section events-section accent-${block.accent}`}>
+    <section id={block.id} className={`render-block content-section events-section accent-${block.theme.accent}`}>
       <SectionHeading block={block} showViewAll />
       <div className="events-timeline">
         {items.map((item) => (

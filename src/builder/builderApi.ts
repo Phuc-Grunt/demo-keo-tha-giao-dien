@@ -24,6 +24,7 @@ function parseDocument(value: unknown, errorMessage: string): BuilderDocument {
 
 /** Đổi loại khối trên giao diện thành loại nội dung mà API chấp nhận. */
 function contentKindFor(block: BuilderBlock): ContentKind {
+  if (block.data?.source.type === "content_entries") return block.data.source.kind;
   if (block.kind === "stats") return "stat";
   if (block.kind === "links") return "link";
   return block.kind as ContentKind;
@@ -67,8 +68,9 @@ async function getContentEntries(block: BuilderBlock, signal: AbortSignal): Prom
 
 /** Chọn API dữ liệu phù hợp với loại khối và trả dữ liệu cho BlockRenderer. */
 export async function getBlockData(block: BuilderBlock, signal: AbortSignal): Promise<BlockData> {
+  if (!block.data || block.data.source.type === "static") return {};
   // Các block lấy từ bảng articles
-  if (["news", "notice", "ticker", "featured", "video", "events", "tabs"].includes(block.kind))
+  if (block.data.source.type === "articles")
     return { articles: await getArticles(block, signal) };
   // Các block lấy từ bảng content_entries
   return { entries: await getContentEntries(block, signal) };

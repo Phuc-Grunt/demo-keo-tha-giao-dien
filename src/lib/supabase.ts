@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { BuilderDocument, documentSchema } from "@/builder/model";
+import { z } from "zod";
 
 export type Category = { id: string; slug: string; name: string };
 export type Article = {
@@ -13,6 +14,12 @@ export type Article = {
   view_count: number;
   categories: { name: string; slug: string } | null;
 };
+const articleResponseSchema: z.ZodType<Article> = z.object({
+  id: z.string(), slug: z.string(), title: z.string(), summary: z.string(), image_url: z.string().nullable().optional(),
+  published_at: z.string(), is_hot: z.boolean(), view_count: z.number(),
+  categories: z.object({ name: z.string(), slug: z.string() }).nullable(),
+});
+interface ArticleQueryOptions { categorySlug?: string; mode?: "latest" | "hot"; limit?: number }
 export const contentKinds = ["hero", "stat", "link", "text", "gallery"] as const;
 export type ContentKind = (typeof contentKinds)[number];
 export type ContentEntry = {
@@ -83,7 +90,7 @@ export async function saveDraft(document: BuilderDocument): Promise<void> {
   if (!db) throw new Error("Chưa cấu hình SUPABASE_SECRET_KEY.");
   const { error } = await db.from("pages").upsert({
     slug: "home",
-    name: document.name,
+    name: document.meta.name,
     draft_content: document,
     updated_at: new Date().toISOString(),
   }, { onConflict: "slug" });
@@ -110,7 +117,8 @@ export async function getCategories(): Promise<Category[]> {
   return (data ?? []) as Category[];
 }
 
-export async function getArticles(options: { categorySlug?: string; mode?: "latest" | "hot"; limit?: number } = {}): Promise<Article[]> {
+/** Đọc bài viết và kiểm tra DTO ở biên Supabase trước khi đưa vào renderer. */
+export async function getArticles(options: ArticleQueryOptions = {}): Promise<Article[]> {
   const db = publicClient();
   if (!db) return [];
   let query = db.from("articles")
@@ -124,7 +132,7 @@ export async function getArticles(options: { categorySlug?: string; mode?: "late
   const { data, error } = await query;
   console.log("🚀 ~ getArticles ~ data:", data)
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Article[];
+  return z.array(articleResponseSchema).parse(data ?? []);
 }
 
 export async function getContentEntries(kind: ContentKind, limit = 4): Promise<ContentEntry[]> {

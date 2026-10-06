@@ -11,7 +11,7 @@ const NewsBlock = ({ block, articles }: BlockViewProps) => {
   return (
     <section
       id={block.id}
-      className={`render-block content-section news-section accent-${block.accent}`}
+      className={`render-block content-section news-section accent-${block.theme.accent}`}
     >
       <SectionHeading block={block} showViewAll />
       <div className="news-grid" style={gridColumnsStyle(block)}>
@@ -24,7 +24,7 @@ const NewsBlock = ({ block, articles }: BlockViewProps) => {
             >
               <div className={`news-image news-image-${(index % 3) + 1}`}>
                 <BlockImage
-                  src={article?.image_url}
+                  src={article ? article.image_url : block.content.items[index]?.imageUrl}
                   alt={title}
                   fallback={
                     <>

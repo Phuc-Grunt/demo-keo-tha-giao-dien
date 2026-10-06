@@ -14,6 +14,7 @@ interface SortableBlockProps {
   total: number;
   onSelect: () => void;
   data?: BlockData;
+  dataByBlock?: Record<string, BlockData>;
 }
 
 /** Hiển thị một khối cùng các thao tác chọn, sắp xếp, nhân bản và xóa. */
@@ -24,6 +25,7 @@ const SortableBlock = ({
   total,
   onSelect,
   data,
+  dataByBlock,
 }: SortableBlockProps) => {
   const select = useBuilderStore((state) => state.select);
   const remove = useBuilderStore((state) => state.remove);
@@ -94,7 +96,7 @@ const SortableBlock = ({
           <GripVertical size={16} />
         </button>
       </div>
-      <BlockRenderer block={block} {...data} isEditor={true} />
+      <BlockRenderer block={block} {...data} dataByBlock={dataByBlock} isEditor={true} />
     </div>
   );
 };

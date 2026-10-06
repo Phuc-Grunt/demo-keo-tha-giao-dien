@@ -12,6 +12,7 @@ import { blockCatalog, blockKinds, BuilderBlock } from "@/builder/model";
 import { useBuilderStore } from "@/builder/store";
 import { slotId } from "../helps/slotId";
 import SlotItem from "./SlotItem";
+import type { BlockData } from "../../../builderApi";
 
 /** Hiển thị vùng thả và danh sách khối trong một cột. */
 
@@ -20,6 +21,8 @@ interface ColumnSlotProps {
   colIdx: number;
   blocks: BuilderBlock[];
   isOver: boolean;
+  slotKey: string;
+  dataByBlock?: Record<string, BlockData>;
 }
 
 const ColumnSlot = ({
@@ -27,6 +30,8 @@ const ColumnSlot = ({
   colIdx,
   blocks,
   isOver,
+  slotKey,
+  dataByBlock,
 }: ColumnSlotProps) => {
   const addToSlot = useBuilderStore((s) => s.addToSlot);
   const { setNodeRef } = useDroppable({ id: slotId(parentId, colIdx), data: { parentId, colIdx, type: "slot" } });
@@ -38,6 +43,7 @@ const ColumnSlot = ({
   return (
     <div
       ref={setNodeRef}
+      data-builder-slot-id={slotKey}
       className={`column-slot${isOver ? " slot-over" : ""}${blocks.length === 0 ? " slot-empty" : ""}`}
     >
       <SortableContext
@@ -50,6 +56,7 @@ const ColumnSlot = ({
             block={block}
             parentId={parentId}
             colIdx={colIdx}
+            dataByBlock={dataByBlock}
           />
         ))}
       </SortableContext>

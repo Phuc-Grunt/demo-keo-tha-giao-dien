@@ -7,7 +7,7 @@ const TextBlock = ({ block, entries }: BlockViewProps) => {
   return (
     <section
       id={block.id}
-      className={`render-block content-section text-section accent-${block.accent}`}
+      className={`render-block content-section text-section accent-${block.theme.accent}`}
     >
       <SectionHeading
         block={block}
