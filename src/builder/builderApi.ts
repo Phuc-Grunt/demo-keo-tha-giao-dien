@@ -1,4 +1,4 @@
-import { documentSchema, getBlockSource, type BuilderBlock, type BuilderDocument } from "./model";
+import { documentSchema, getBlockSource, type BuilderBlock, type BuilderDocument } from "./domain/model";
 import type { Article, Category, ContentEntry, ContentKind } from "@/lib/supabase";
 
 export type BlockData = { articles?: Article[]; entries?: ContentEntry[] };

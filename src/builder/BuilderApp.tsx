@@ -37,9 +37,9 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { BlockRenderer } from "./BlockRenderer";
+import { BlockRenderer } from "./renderer/BlockRenderer";
 import { Button } from "@/components/ui/button";
-import { PortalChrome } from "./PortalChrome";
+import { PortalChrome } from "./renderer/PortalChrome";
 import {
   blockCatalog,
   blockKinds,
@@ -47,21 +47,22 @@ import {
   documentSchema,
   getPageWidth,
   flattenBlocks,
-} from "./model";
+} from "./domain/model";
 import {
   PageWidthControl,
   FontPicker,
-} from "./InspectorControls";
-import { useBuilderStore } from "./store";
+} from "./editor/components/inspector/InspectorControls";
+import { useBuilderStore } from "./editor/store";
 import * as builderApi from "./builderApi";
 import type { BlockData } from "./builderApi";
 import type { Category } from "@/lib/supabase";
-import EditorCanvas from "./components/EditorCanvas";
-import Inspector from "./components/Inspector";
-import PaletteItem from "./components/PaletteItem";
-import paletteIcons from "./components/paletteIcons";
-import HtmlEditor from "./components/HtmlEditor";
-import { documentToHtml, MAX_TEMPLATE_HTML_SIZE } from "./htmlCodec";
+import EditorCanvas from "./editor/components/EditorCanvas";
+import Inspector from "./editor/components/inspector/Inspector";
+import PaletteItem from "./editor/components/PaletteItem";
+import paletteIcons from "./editor/components/paletteIcons";
+import HtmlEditor from "./editor/components/htmlEditor/HtmlEditor";
+import { documentToEditorHtml, MAX_TEMPLATE_HTML_SIZE } from "./html/htmlCodec";
+import { createBlockEditorSession, type BlockEditorSession } from "./editor/blockHtmlEditor";
 
 /** Điều phối trạng thái trình biên tập, dữ liệu API và các thao tác người dùng. */
 const BuilderApp = () => {
@@ -74,7 +75,7 @@ const BuilderApp = () => {
   const load = useBuilderStore((state) => state.load);
   const [hydrated, setHydrated] = useState(false);
   const [preview, setPreview] = useState(false);
-  const [htmlSource, setHtmlSource] = useState<string | null>(null);
+  const [htmlSession, setHtmlSession] = useState<BlockEditorSession | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   // Trạng thái đóng/mở của thư viện thành phần để nhường chỗ cho vùng chỉnh sửa.
@@ -237,7 +238,7 @@ const BuilderApp = () => {
       const isHtml = /\.html?$/i.test(file.name) || file.type === "text/html";
       if (file.size > (isHtml ? MAX_TEMPLATE_HTML_SIZE : 3_000_000)) throw new Error(`Tệp vượt quá ${isHtml ? 10 : 3} MB.`);
       const text = await file.text();
-      if (isHtml) { setHtmlSource(text); return; }
+      if (isHtml) { setHtmlSession(createBlockEditorSession(text)); return; }
       const parsed = documentSchema.safeParse(JSON.parse(text));
       if (!parsed.success)
         throw new Error("Tệp JSON không đúng cấu trúc của demo.");
@@ -252,7 +253,7 @@ const BuilderApp = () => {
 
   /** Xuất template từ JSON chuẩn và mở màn sửa mã có preview trực tiếp. */
   function openHtmlEditor() {
-    try { setHtmlSource(documentToHtml(document)); }
+    try { setHtmlSession(createBlockEditorSession(documentToEditorHtml(document))); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Không thể tạo HTML."); }
   }
 
@@ -576,8 +577,8 @@ const BuilderApp = () => {
         </div>
       )}
 
-      {htmlSource !== null && <HtmlEditor initialHtml={htmlSource} onClose={() => setHtmlSource(null)} onApply={(nextDocument) => {
-        load(nextDocument); setHtmlSource(null); setMessage("Đã chuyển HTML thành JSON v2 và cập nhật trình dựng.");
+      {htmlSession !== null && <HtmlEditor initialSession={htmlSession} initialBlockId={useBuilderStore.getState().selectedId} onClose={() => setHtmlSession(null)} onApply={(nextDocument) => {
+        load(nextDocument); setHtmlSession(null); setMessage("Đã chuyển HTML/CSS các component thành JSON v2 và cập nhật trình dựng.");
       }} />}
       {preview && (
         <div

@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { BuilderDocument, documentSchema } from "@/builder/model";
+import { BuilderDocument, documentSchema } from "@/builder/domain/model";
 import { z } from "zod";
 
 export type Category = { id: string; slug: string; name: string };

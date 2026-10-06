@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ Cổng thông tin</title>
+    <!-- CSS dùng chung cho kích thước màn hình; style của từng block nằm ngay tại thẻ. -->
+    <style>
+      * { box-sizing: border-box; }
+
+      @media (max-width: 992px) {
+        .columns-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      }
+
+      @media (max-width: 650px) {
+        .columns-2, .columns-3 { grid-template-columns: 1fr !important; }
+        [data-page] { padding: 16px !important; }
+        [data-block="hero"] { padding: 24px !important; }
+        [data-block="hero"] [data-field="title"] { font-size: 32px !important; }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      background-color: #f4f6fa;
+      color: #1f2937;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    "
+  >
+    <!--
+      MẪU ĐỊNH DẠNG ĐỂ DUYỆT, CHƯA ĐƯỢC BỘ NHẬP HIỆN TẠI HỖ TRỢ.
+      Sửa chữ giữa các thẻ và sửa các dòng CSS trong style.
+      Giữ data-* để nhận diện block, field và cấu hình khi hoàn thiện bộ nhập.
+      Tin lấy từ JSON mẫu, hiển thị theo limit; không gọi API và không chạy slideshow.
+    -->
+    <main
+      data-page="Trang chủ Cổng thông tin"
+      data-format="inline-style-sample-v1"
+      data-theme-color="#432970"
+      style="
+        display: grid;
+        gap: 24px;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px;
+      "
+    >
+
+      <!-- BLOCK 1: Hero — sửa tiêu đề, mô tả và nền tại đây. -->
+      <section
+        data-id="39961c7e-3024-451c-93b9-4023e4723bd1"
+        data-block="hero"
+        data-accent="green"
+        style="
+          padding: 36px;
+          border-radius: 16px;
+          background-color: #432970;
+          color: #ffffff;
+        "
+      >
+        <p data-field="eyebrow" style="margin: 0; font-size: 9px;"></p>
+        <h1
+          data-field="title"
+          style="
+            margin: 0 0 16px;
+            font-size: 42px;
+            line-height: 1.2;
+            font-weight: 700;
+          "
+        >Kết nối tri thức, kiến tạo tương lai</h1>
+        <p
+          data-field="description"
+          style="
+            margin: 0;
+            color: #e9e3f3;
+            font-size: 18px;
+          "
+        >Cập nhật thông tin, chính sách và hoạt động giáo dục một cách nhanh chóng, minh bạch.</p>
+      </section>
+
+      <!-- BLOCK 2: Tin mới — cấu hình nguồn tin nằm trên thẻ section. -->
+      <section
+        data-id="ba9ad543-a17b-4e7d-91b0-fa3edca75d03"
+        data-block="news"
+        data-accent="blue"
+        data-source="articles"
+        data-mode="latest"
+        data-limit="3"
+        data-category-slug=""
+        style="
+          padding: 24px;
+          border-radius: 16px;
+          background-color: #ffffff;
+        "
+      >
+        <p data-field="eyebrow" style="margin: 0 0 6px; color: #2563eb; font-size: 12px; font-weight: 700;">TIN MỚI NHẤT</p>
+        <h2
+          data-field="title"
+          style="
+            margin: 0 0 8px;
+            color: #172554;
+            font-size: 28px;
+            line-height: 1.3;
+          "
+        >Tin tức và sự kiện</h2>
+        <p data-field="description" style="margin: 0 0 20px; color: #64748b;">Những thông tin nổi bật từ ngành giáo dục.</p>
+        <div
+          data-part="items"
+          class="columns-3"
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+          "
+        >
+          <article
+            data-item="news-latest-1"
+            style="
+              padding: 20px;
+              border: 1px solid #dbe3ef;
+              border-radius: 12px;
+              background-color: #f8fafc;
+            "
+          >
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">IECEE 2026: Kiến tạo giải pháp cho những yêu cầu mới của giáo dục và nguồn nhân lực</h3>
+          </article>
+          <article
+            data-item="news-latest-2"
+            style="
+              padding: 20px;
+              border: 1px solid #dbe3ef;
+              border-radius: 12px;
+              background-color: #f8fafc;
+            "
+          >
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Hướng dẫn thực hiện chính sách học bổng theo Nghị định số 179/2026/NĐ-CP</h3>
+          </article>
+          <article
+            data-item="news-latest-3"
+            style="
+              padding: 20px;
+              border: 1px solid #dbe3ef;
+              border-radius: 12px;
+              background-color: #f8fafc;
+            "
+          >
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp</h3>
+          </article>
+        </div>
+      </section>
+
+      <!-- BLOCK 3: Tin nổi bật — data-autoplay/interval chỉ lưu ý định cấu hình trong mẫu tĩnh. -->
+      <section
+        data-id="01b48cb5-63f0-483c-b3eb-2e7ea4642d3b"
+        data-block="featured"
+        data-accent="blue"
+        data-source="articles"
+        data-mode="latest"
+        data-limit="5"
+        data-category-slug=""
+        data-autoplay="true"
+        data-interval-ms="3000"
+        style="
+          padding: 24px;
+          border-radius: 16px;
+          background-color: #eef4ff;
+        "
+      >
+        <p data-field="eyebrow" style="margin: 0 0 6px; color: #2563eb; font-size: 12px; font-weight: 700;">TIN NỔI BẬT</p>
+        <h2
+          data-field="title"
+          style="
+            margin: 0 0 8px;
+            color: #172554;
+            font-size: 28px;
+            line-height: 1.3;
+          "
+        >Tin tức nổi bật trong tuần</h2>
+        <p data-field="description" style="margin: 0 0 20px; color: #64748b;">Những thông tin quan trọng được chọn lọc.</p>
+        <div
+          data-part="items"
+          style="
+            display: grid;
+            gap: 12px;
+          "
+        >
+          <article data-item="featured-1" style="padding: 16px 20px; border-radius: 12px; background-color: #ffffff;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">IECEE 2026: Kiến tạo giải pháp cho những yêu cầu mới của giáo dục và nguồn nhân lực</h3>
+          </article>
+          <article data-item="featured-2" style="padding: 16px 20px; border-radius: 12px; background-color: #ffffff;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Hướng dẫn thực hiện chính sách học bổng theo Nghị định số 179/2026/NĐ-CP</h3>
+          </article>
+          <article data-item="featured-3" style="padding: 16px 20px; border-radius: 12px; background-color: #ffffff;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp</h3>
+          </article>
+          <article data-item="featured-4" style="padding: 16px 20px; border-radius: 12px; background-color: #ffffff;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Bộ GDĐT công bố 14 thủ tục hành chính mới, thay thế 34 thủ tục</h3>
+          </article>
+          <article data-item="featured-5" style="padding: 16px 20px; border-radius: 12px; background-color: #ffffff;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Rà soát, đánh giá nhiệm vụ trọng tâm đầu năm học đối với giáo dục mầm non, phổ thông</h3>
+          </article>
+        </div>
+      </section>
+
+      <!-- BLOCK 4: Tin theo chuyên mục — sửa data-category-slug để đổi chuyên mục trong định dạng đề xuất. -->
+      <section
+        data-id="abb15db7-233d-4875-ac57-a9eec5042410"
+        data-block="news"
+        data-accent="blue"
+        data-source="articles"
+        data-mode="latest"
+        data-limit="2"
+        data-category-slug="tin-tuc"
+        style="
+          padding: 24px;
+          border-radius: 16px;
+          background-color: #ffffff;
+        "
+      >
+        <p data-field="eyebrow" style="margin: 0 0 6px; color: #2563eb; font-size: 12px; font-weight: 700;">TIN MỚI NHẤT</p>
+        <h2
+          data-field="title"
+          style="
+            margin: 0 0 8px;
+            color: #172554;
+            font-size: 28px;
+            line-height: 1.3;
+          "
+        >Tin tức và sự kiện</h2>
+        <p data-field="description" style="margin: 0 0 20px; color: #64748b;">Những thông tin nổi bật từ ngành giáo dục.</p>
+        <div
+          data-part="items"
+          class="columns-2"
+          style="
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+          "
+        >
+          <article data-item="news-category-1" style="padding: 20px; border: 1px solid #dbe3ef; border-radius: 12px;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Đổi mới giáo dục trong giai đoạn mới</h3>
+          </article>
+          <article data-item="news-category-2" style="padding: 20px; border: 1px solid #dbe3ef; border-radius: 12px;">
+            <h3 data-item-field="title" style="margin: 0; font-size: 18px; line-height: 1.5;">Tăng cường ứng dụng công nghệ trong dạy học</h3>
+          </article>
+        </div>
+      </section>
+
+      <!-- BLOCK 5: Thống kê — mỗi mục có value và label riêng, không ghép bằng dấu |. -->
+      <section
+        data-id="af94bb17-f002-4beb-a427-26c2bc6d4c5c"
+        data-block="stats"
+        data-accent="green"
+        data-source="static"
+        style="
+          padding: 24px;
+          border-radius: 16px;
+          background-color: #f0fdf4;
+        "
+      >
+        <p data-field="eyebrow" style="margin: 0 0 6px; color: #15803d; font-size: 12px; font-weight: 700;">TỔNG QUAN</p>
+        <h2
+          data-field="title"
+          style="
+            margin: 0 0 8px;
+            color: #14532d;
+            font-size: 28px;
+            line-height: 1.3;
+          "
+        >Giáo dục qua những con số</h2>
+        <p data-field="description" style="margin: 0 0 20px; color: #64748b;">Một vài chỉ số minh họa cho bố cục demo.</p>
+        <div
+          data-part="items"
+          class="columns-3"
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+          "
+        >
+          <div data-item="stats-1" style="padding: 20px; border-radius: 12px; background-color: #ffffff; text-align: center;">
+            <strong data-item-field="value" style="display: block; color: #15803d; font-size: 36px; line-height: 1.3;">63</strong>
+            <span data-item-field="label" style="display: block; margin: 8px 0 0;">Tỉnh, thành phố</span>
+          </div>
+          <div data-item="stats-2" style="padding: 20px; border-radius: 12px; background-color: #ffffff; text-align: center;">
+            <strong data-item-field="value" style="display: block; color: #15803d; font-size: 36px; line-height: 1.3;">24K+</strong>
+            <span data-item-field="label" style="display: block; margin: 8px 0 0;">Cơ sở giáo dục</span>
+          </div>
+          <div data-item="stats-3" style="padding: 20px; border-radius: 12px; background-color: #ffffff; text-align: center;">
+            <strong data-item-field="value" style="display: block; color: #15803d; font-size: 36px; line-height: 1.3;">1.8M+</strong>
+            <span data-item-field="label" style="display: block; margin: 8px 0 0;">Nhà giáo</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-import { documentSchema } from "@/builder/model";
+import { documentSchema } from "@/builder/domain/model";
 import { getDraftPage, getPublishedPage, hasAdminDatabase, hasPublicDatabase, saveDraft } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
