@@ -6,7 +6,7 @@ Next.js, TypeScript và React. Trang biên tập ở `/`; trang đã xuất bả
 
 Tài liệu builder được chuẩn hóa sang JSON v2, tách nội dung, nguồn dữ liệu, bố cục, style, theme và hành vi. JSON v1 được chuyển tự động khi nhập, đọc DB hoặc khôi phục bản nháp cục bộ.
 
-Nút **HTML Editor** mở màn sửa HTML với preview trực tiếp ở cột bên cạnh. HTML template có marker được chuyển về JSON v2 khi nhấn **Áp dụng vào builder**. Xem cấu trúc, giới hạn và hướng dẫn ở [JSON chuẩn và trình biên tập HTML](docs/builder-html.md).
+Nút **HTML Editor** mở màn sửa theo từng component: chọn block, chỉnh tab HTML/CSS riêng và xem toàn bộ vùng block ở bên cạnh. **Xuất HTML / Nhập HTML** dùng định dạng `blocks-v3`: tất cả block nằm trong một tệp, style của component đặt ngay tại thẻ và mỗi khai báo CSS xuống dòng. Không xuất JavaScript hoặc khối JSON. Một vùng `<template>` thụ động ở cuối tệp giữ cấu hình và các giá trị chưa thể đọc từ nội dung hiển thị; CSS dùng chung chỉ còn reset ngắn, responsive, trạng thái và animation. Marker `data-block`/`data-field`/`data-part` nhận diện nội dung, còn `data-source`/`data-limit`/`data-autoplay` thể hiện cấu hình nguồn và slideshow. Khung header/menu/footer được ứng dụng ghép khi hiển thị. Các bản sửa hợp lệ được chuyển về JSON v2 khi nhấn **Áp dụng vào builder**; tệp HTML cũ vẫn nhập được. Xem cấu trúc, giới hạn và hướng dẫn ở [JSON chuẩn và trình biên tập HTML](docs/builder-html.md).
 
 ## Giao diện Tailwind CSS và shadcn/ui
 

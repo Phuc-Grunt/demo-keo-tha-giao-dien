@@ -8,6 +8,13 @@ const textKeys = ["fontSize", "fontWeight", "fontFamily", "lineHeight", "textAli
 const cssName = (key: string): string => key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 const numericKeys = new Set(["gap", "rowGap", "columnGap", "borderRadius", "borderWidth", "fontSize", "fontWeight", "lineHeight", "opacity"]);
 const allowedProperties = new Set([...layoutKeys, ...visualKeys, ...textKeys].map(cssName).concat(["padding", "margin", "border", "background", ...["padding", "margin"].flatMap((name) => ["top", "right", "bottom", "left"].map((side) => `${name}-${side}`))]));
+const shorthandProperties: Record<string, string[]> = {
+  background: ["background-color", "background-image", "background-position", "background-size", "background-repeat", "background-origin", "background-clip", "background-attachment"],
+  border: ["border-width", "border-color", "border-style"],
+  padding: ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+  margin: ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+  font: ["font-size", "font-weight", "font-family", "line-height", "font-style", "font-variant", "font-stretch"],
+};
 const utilityDeclarations: Record<string, CssDeclarations> = {
   flex: { display: "flex" }, grid: { display: "grid" }, block: { display: "block" },
   "flex-row": { "flex-direction": "row" }, "flex-col": { "flex-direction": "column" }, "flex-wrap": { "flex-wrap": "wrap" },
@@ -42,6 +49,14 @@ export function utilityCss(root: ParentNode): string {
   const classes = new Set(Array.from(root.querySelectorAll("[class]")).flatMap((element) => Array.from(element.classList)));
   return Array.from(classes).flatMap((token) => { const declarations = utilityStyle(token); return declarations ? [`.${CSS.escape(token)}{${Object.entries(declarations).map(([key, value]) => `${key}:${value};`).join("")}}`] : []; }).join("\n");
 }
+/** Báo CSS sai trước khi chuẩn hóa DOM, tránh browser loại bỏ âm thầm khai báo người dùng vừa sửa. */
+export function validateStyleDeclarations(element: HTMLElement | SVGElement): void {
+  for (const declaration of (element.getAttribute("style") ?? "").replace(/\/\*[\s\S]*?\*\//g, "").split(";")) {
+    if (!declaration.trim()) continue;
+    const key = declaration.match(/^\s*([\w-]+)\s*:/)?.[1]?.toLowerCase();
+    if (!key || !element.style.getPropertyValue(key)) throw new Error(`Khai báo CSS không hợp lệ: ${declaration.trim()}.`);
+  }
+}
 /** Đọc CSS vào nhóm chuẩn; không chấp nhận thuộc tính có thể bị mất khi render lại. */
 export function readPresentation(element: HTMLElement, typography = false): ParsedPresentation {
   const combined = document.createElement("div");
@@ -54,13 +69,18 @@ export function readPresentation(element: HTMLElement, typography = false): Pars
   }
   const baseline = document.createElement("div"); baseline.setAttribute("style", element.getAttribute("data-builder-base-style") ?? "");
   const configured = new Set((element.getAttribute("data-builder-configured-properties") ?? "").split(","));
-  for (const declaration of (element.getAttribute("style") ?? "").replace(/\/\*[\s\S]*?\*\//g, "").split(";")) {
-    if (!declaration.trim()) continue;
-    const key = declaration.match(/^\s*([\w-]+)\s*:/)?.[1]?.toLowerCase();
-    if (!key || !element.style.getPropertyValue(key)) throw new Error(`Khai báo CSS không hợp lệ: ${declaration.trim()}.`);
+  validateStyleDeclarations(element);
+  if (element.closest('[data-builder-format="blocks-v3"]')) {
+    const defaults = new Set(Array.from(baseline.style).flatMap((key) => shorthandProperties[key] ?? [key]));
+    for (const key of defaults) if (baseline.style.getPropertyValue(key) && !element.style.getPropertyValue(key)) {
+      throw new Error(`Không xóa CSS nền ${key}. Đổi giá trị trên thẻ để có thể nhập lại đúng giao diện.`);
+    }
   }
-  for (const key of element.style) {
+  // CSS nền v3 nằm inline; so sánh từng longhand để đổi màu không vô tình nhập lại gradient mặc định.
+  const properties = new Set(Array.from(element.style).flatMap((key) => shorthandProperties[key] ?? [key]));
+  for (const key of properties) {
     const value = element.style.getPropertyValue(key);
+    if (!value) continue;
     if (value === baseline.style.getPropertyValue(key) && !configured.has(key)) continue;
     if (!allowedProperties.has(key)) {
       if (value === baseline.style.getPropertyValue(key)) continue;

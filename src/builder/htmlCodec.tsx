@@ -3,26 +3,24 @@
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { z } from "zod";
-import { BlockRenderer } from "./BlockRenderer";
-import { PortalChrome } from "./PortalChrome";
+import HtmlTemplate from "./HtmlTemplate";
 import { blockSchema, documentSchema, normalizedDocumentSchema, flattenBlocks, getPageWidth, getBlockSource, textTargets, type BuilderBlock, type BuilderDocument, type BuilderItem, type BlockDataConfig, type PartConfig, type PartName, type TextStyleTarget } from "./model";
 import { blockAppearanceCss, partDeclarations, textDeclarations, templateSelectors, type CssDeclarations } from "./appearance";
 import { readPresentation, utilityCss } from "./htmlStyle";
+import { templateStyles } from "./htmlTemplateStyles";
+import { hiddenTemplateAttributes, restoreTemplateContract } from "./htmlTemplateContract";
+import { expandReadableMarkers, formatReadableHtml, prepareReadableHtml, INLINE_HTML_FORMAT, READABLE_HTML_FORMAT } from "./htmlReadableFormat";
+import { inlineTemplateStyles, normalizeInlineStyles } from "./htmlInlineStyles";
+import { appendInlineSettings, readInlineSettings } from "./htmlInlineSettings";
 
 export const MAX_TEMPLATE_HTML_SIZE = 10_000_000;
 const fieldListSchema = z.array(z.enum(textTargets));
 const stringListSchema = z.array(z.string());
 
-/** Mẫu HTML dùng chính renderer React của builder để giữ cấu trúc và class hiện có. */
-interface HtmlTemplateProps { document: BuilderDocument }
-const HtmlTemplate = ({ document }: HtmlTemplateProps) => <PortalChrome document={document}>
-  {document.blocks.map((block) => <BlockRenderer key={block.id} block={block} isEditor={false} />)}
-</PortalChrome>;
-
 /** JSON metadata không thực thi; escape dấu < để nội dung không đóng thẻ script. */
-function metadataElement(name: string, value: BuilderDocument | BuilderBlock): HTMLScriptElement {
+function metadataElement(name: string, value: BuilderDocument): HTMLScriptElement {
   const element = document.createElement("script"); element.type = "application/json";
-  element.setAttribute(name, ""); element.textContent = JSON.stringify(value, null, 2).replace(/</g, "\\u003c");
+  element.setAttribute(name, ""); element.textContent = JSON.stringify(value).replace(/</g, "\\u003c");
   return element;
 }
 /** Chỉ chọn phần tử thuộc khối hiện tại, không lấy nhầm field của khối trong slot. */
@@ -114,7 +112,7 @@ function decorateBlock(root: HTMLElement, block: BuilderBlock): void {
     const element = ownElements(root, "[data-builder-slot-id]").find((candidate) => candidate.getAttribute("data-builder-slot-id") === slot.id);
     if (element) markPresentation(element, partDeclarations(slot));
   }
-  decorateItems(root, block); root.prepend(metadataElement("data-builder-block-config", block));
+  decorateItems(root, block);
   for (const slot of block.slots ?? []) for (const child of slot.blocks) {
     const element = Array.from(root.querySelectorAll<HTMLElement>("[data-builder-block-id]")).find((candidate) => candidate.getAttribute("data-builder-block-id") === child.id);
     if (element) decorateBlock(element, child);
@@ -163,19 +161,9 @@ function validateStaticContract(page: HTMLElement): void {
     }
   }
 }
-/** Thu thập CSS đã được Next nạp; bỏ stylesheet ghi đè riêng của từng block. */
-function templateStyles(): string {
-  const result = ["html,body{margin:0;background:#fff;}body>.portal-page{margin:0 auto;}"];
-  for (const sheet of Array.from(document.styleSheets)) {
-    if (sheet.ownerNode instanceof Element && sheet.ownerNode.hasAttribute("data-builder-managed-style")) continue;
-    try { result.push(Array.from(sheet.cssRules).map((rule) => rule.cssText).join("\n")); } catch { /* CSS font ở origin khác tiếp tục dùng font dự phòng. */ }
-  }
-  return result.join("\n").replace(/<\/style/gi, "<\\/style");
-}
-
-/** JSON chuẩn → HTML mẫu có marker và metadata bảo toàn nguồn/behavior/responsive. */
-export function documentToHtml(input: BuilderDocument): string {
-  const normalized = documentSchema.parse(input); const css = templateStyles();
+/** Template nội bộ có contract đầy đủ; một metadata chung giữ cấu hình của toàn bộ cây block. */
+export function documentToEditorHtml(input: BuilderDocument): string {
+  const normalized = documentSchema.parse(input);
   const mount = document.createElement("div"); mount.style.cssText = `position:fixed;left:-100000px;width:${getPageWidth(normalized)}px;`; document.body.append(mount);
   const reactRoot = createRoot(mount);
   try {
@@ -183,6 +171,8 @@ export function documentToHtml(input: BuilderDocument): string {
     const rendered = mount.querySelector<HTMLElement>("[data-builder-page]"); if (!rendered) throw new Error("Không thể tạo mẫu HTML.");
     const page = rendered.cloneNode(true); if (!(page instanceof HTMLElement)) throw new Error("Không thể sao chép mẫu HTML.");
     page.querySelectorAll("[data-builder-managed-style]").forEach((element) => element.remove());
+    const css = templateStyles(page);
+    page.setAttribute("data-builder-format", "blocks-v1"); page.setAttribute("data-builder-internal", "true");
     page.setAttribute("data-builder-version", "2"); page.setAttribute("data-builder-name", normalized.meta.name);
     page.setAttribute("data-builder-primary-color", normalized.theme.primaryColor ?? ""); page.setAttribute("data-builder-font-family", normalized.theme.fontFamily ?? "");
     markPresentation(page, partDeclarations(normalized.page));
@@ -203,6 +193,22 @@ export function documentToHtml(input: BuilderDocument): string {
     responsive.textContent = flattenBlocks(normalized.blocks).map((block) => blockAppearanceCss(block, false)).join("\n"); responsive.setAttribute("data-builder-responsive-css", stylesheetHash(responsive.textContent)); output.body.append(responsive);
     return formatTemplate(output);
   } finally { reactRoot.unmount(); mount.remove(); }
+}
+
+/** JSON → HTML từng block có style tại thẻ, không xuất script hoặc khối JSON. */
+export function documentToHtml(input: BuilderDocument): string {
+  const normalized = documentSchema.parse(input);
+  const parsed = new DOMParser().parseFromString(documentToEditorHtml(normalized), "text/html");
+  inlineTemplateStyles(parsed);
+  appendInlineSettings(parsed, normalized);
+  for (const element of Array.from(parsed.querySelectorAll("*"))) for (const name of hiddenTemplateAttributes) element.removeAttribute(name);
+  parsed.querySelector("[data-builder-page]")?.setAttribute("data-builder-format", INLINE_HTML_FORMAT);
+  prepareReadableHtml(parsed, true);
+  for (const style of Array.from(parsed.querySelectorAll("style"))) {
+    const marker = style.hasAttribute("data-builder-template-css") ? "data-builder-template-css" : "data-builder-responsive-css";
+    style.setAttribute(marker, stylesheetHash(style.textContent ?? ""));
+  }
+  return formatReadableHtml(parsed, true);
 }
 
 /** Xuống dòng giữa các tag, bảo toàn tuyệt đối khoảng trắng trong field, SVG và metadata. */
@@ -265,87 +271,150 @@ function readItems(root: HTMLElement, seed: BuilderBlock): BuilderItem[] {
   return [...changed.values(), ...seed.content.items.filter((item) => !changed.has(item.id) && !originalVisible.includes(item.id))];
 }
 /** Parse một block và toàn bộ slot, giữ các field không có phần tử hiển thị trong metadata. */
-function readBlock(root: HTMLElement): BuilderBlock {
-  const config = ownElements(root, "script[data-builder-block-config]"); if (config.length !== 1) throw new Error("Mỗi khối phải có đúng một metadata data-builder-block-config.");
-  const seed = blockSchema.parse(JSON.parse(config[0].textContent ?? ""));
+function readBlock(root: HTMLElement, seeds?: ReadonlyMap<string, BuilderBlock>): BuilderBlock {
   const id = root.getAttribute("data-builder-block-id") ?? "";
-  if (root.getAttribute("data-builder-block-kind") !== seed.kind) throw new Error(`Khối ${id}: kind không khớp metadata.`);
-  const result = structuredClone(seed); result.id = id;
-  if (!root.hasAttribute("data-builder-required-fields") || !root.hasAttribute("data-builder-visible-item-ids")) throw new Error(`Khối ${id}: thiếu marker danh sách field/mục.`);
-  const accent = (["blue", "red", "green"] as const).find((candidate) => candidate === root.getAttribute("data-builder-accent"));
-  if (!accent) throw new Error(`Khối ${id}: màu nhấn không hợp lệ.`);
-  result.theme = { accent, accentColor: root.getAttribute("data-builder-accent-color") || undefined, fontFamily: root.getAttribute("data-builder-font-family") || undefined };
-  result.variant = root.getAttribute("data-builder-variant") || undefined;
-  result.data = readData(root, seed);
-  if (root.hasAttribute("data-builder-autoplay")) {
-    const autoplay = root.getAttribute("data-builder-autoplay"); if (autoplay !== "true" && autoplay !== "false") throw new Error("Autoplay phải là true hoặc false.");
-    result.behavior = { ...seed.behavior, slideshow: { autoplay: autoplay === "true", intervalMs: Number(root.getAttribute("data-builder-interval-ms")) } };
-  } else if (seed.behavior?.slideshow) throw new Error(`Khối ${id}: thiếu marker slideshow.`);
-  const required = fieldListSchema.parse(JSON.parse(root.getAttribute("data-builder-required-fields") ?? "[]"));
-  for (const target of textTargets) {
-    const fields = ownElements(root, `[data-builder-field="${target}"]`);
-    if (fields.length > 1 || (required.includes(target) && fields.length !== 1)) throw new Error(`Khối ${id}: field ${target} bị thiếu hoặc trùng.`);
-    if (!fields[0]) continue;
-    const value = fields[0].textContent ?? "";
-    result.content[target] = value === fields[0].getAttribute("data-builder-base-value") ? seed.content[target] : value;
-    const presentation = readPresentation(fields[0], true);
-    if (presentation.layout || presentation.style) throw new Error(`Field ${target} chỉ hỗ trợ kiểu chữ; sửa layout/style tại part heading hoặc root.`);
-    if (presentation.text) result.textStyles = { ...result.textStyles, [target]: presentation.text };
-    else if (result.textStyles) delete result.textStyles[target];
-  }
-  const parts = new Map<PartName, PartConfig>();
-  for (const element of ownElements(root, "[data-builder-part]")) {
-    const name = element.getAttribute("data-builder-part") as PartName;
-    if (!templateSelectors[result.kind].parts[name]) throw new Error(`Khối ${id}: part ${name} không được hỗ trợ.`);
-    const presentation = readPresentation(element); const part = { layout: presentation.layout, style: presentation.style };
-    if (parts.has(name) && JSON.stringify(parts.get(name)) !== JSON.stringify(part)) throw new Error(`Part ${name} có các style khác nhau. Cấu hình part áp dụng chung cho các phần tử lặp.`);
-    parts.set(name, part);
-  }
-  if (!parts.has("root")) throw new Error(`Khối ${id}: thiếu part root.`);
-  result.layout = parts.get("root")?.layout; result.style = parts.get("root")?.style;
-  if (result.kind === "columns" && result.layout?.columns !== undefined) {
-    const { columns, ...layout } = result.layout;
-    result.layout = { ...layout, gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` };
-  }
-  for (const [name, part] of parts) if (name !== "root") {
-    if (part.layout || part.style) result.parts = { ...result.parts, [name]: part };
-    else if (result.parts) delete result.parts[name];
-  }
-  if (result.textStyles && !Object.keys(result.textStyles).length) result.textStyles = undefined;
-  if (result.parts && !Object.keys(result.parts).length) result.parts = undefined;
-  result.content.items = readItems(root, seed);
-  if (result.kind === "hero") {
-    const image = ownElements(root, ".hero-art img")[0];
-    if (image) {
-      const presentation = readPresentation(image);
-      if (presentation.layout || presentation.style) throw new Error("Đặt layout/style của ảnh tại part image, không đặt trên img.");
-      result.content.imageUrl = image.getAttribute("src") ?? undefined;
+  const config = ownElements(root, "script[data-builder-block-config]");
+  if (!seeds && config.length !== 1) throw new Error("Khối thiếu cấu hình. Hãy nhập tệp HTML xuất từ builder.");
+  const seed = seeds ? seeds.get(id) : blockSchema.parse(JSON.parse(config[0].textContent ?? ""));
+  if (!seed) throw new Error(`Khối ${id}: thiếu cấu hình trong metadata chung.`);
+  try {
+    if (root.getAttribute("data-builder-block-kind") !== seed.kind) throw new Error(`Khối ${id}: kind không khớp metadata.`);
+    const result = structuredClone(seed); result.id = id;
+    if (!root.hasAttribute("data-builder-required-fields") || !root.hasAttribute("data-builder-visible-item-ids")) throw new Error(`Khối ${id}: thiếu marker danh sách field/mục.`);
+    const accent = (["blue", "red", "green"] as const).find((candidate) => candidate === root.getAttribute("data-builder-accent"));
+    if (!accent) throw new Error(`Khối ${id}: màu nhấn không hợp lệ.`);
+    result.theme = { accent, accentColor: root.getAttribute("data-builder-accent-color") || undefined, fontFamily: root.getAttribute("data-builder-font-family") || undefined };
+    result.variant = root.getAttribute("data-builder-variant") || undefined;
+    result.data = readData(root, seed);
+    if (root.hasAttribute("data-builder-autoplay")) {
+      const autoplay = root.getAttribute("data-builder-autoplay"); if (autoplay !== "true" && autoplay !== "false") throw new Error("Autoplay phải là true hoặc false.");
+      result.behavior = { ...seed.behavior, slideshow: { autoplay: autoplay === "true", intervalMs: Number(root.getAttribute("data-builder-interval-ms")) } };
+    } else if (seed.behavior?.slideshow) throw new Error(`Khối ${id}: thiếu marker slideshow.`);
+    const required = fieldListSchema.parse(JSON.parse(root.getAttribute("data-builder-required-fields") ?? "[]"));
+    for (const target of textTargets) {
+      const fields = ownElements(root, `[data-builder-field="${target}"]`);
+      if (fields.length > 1 || (required.includes(target) && fields.length !== 1)) throw new Error(`Khối ${id}: field ${target} bị thiếu hoặc trùng.`);
+      if (!fields[0]) continue;
+      const value = fields[0].textContent ?? "";
+      result.content[target] = value === fields[0].getAttribute("data-builder-base-value") ? seed.content[target] : value;
+      const presentation = readPresentation(fields[0], true);
+      if (presentation.layout || presentation.style) throw new Error(`Field ${target} chỉ hỗ trợ kiểu chữ; sửa layout/style tại part heading hoặc root.`);
+      if (presentation.text) result.textStyles = { ...result.textStyles, [target]: presentation.text };
+      else if (result.textStyles) delete result.textStyles[target];
     }
-    else if (seed.content.imageUrl) result.content.imageUrl = undefined;
+    const parts = new Map<PartName, PartConfig>();
+    for (const element of ownElements(root, "[data-builder-part]")) {
+      const name = element.getAttribute("data-builder-part") as PartName;
+      if (!templateSelectors[result.kind].parts[name]) throw new Error(`Khối ${id}: part ${name} không được hỗ trợ.`);
+      const presentation = readPresentation(element); const part = { layout: presentation.layout, style: presentation.style };
+      if (parts.has(name) && JSON.stringify(parts.get(name)) !== JSON.stringify(part)) throw new Error(`Part ${name} có các style khác nhau. Cấu hình part áp dụng chung cho các phần tử lặp.`);
+      parts.set(name, part);
+    }
+    if (!parts.has("root")) throw new Error(`Khối ${id}: thiếu part root.`);
+    result.layout = parts.get("root")?.layout; result.style = parts.get("root")?.style;
+    if (result.kind === "columns" && result.layout?.columns !== undefined) {
+      const { columns, ...layout } = result.layout;
+      result.layout = { ...layout, gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` };
+    }
+    for (const [name, part] of parts) if (name !== "root") {
+      if (part.layout || part.style) result.parts = { ...result.parts, [name]: part };
+      else if (result.parts) delete result.parts[name];
+    }
+    if (result.textStyles && !Object.keys(result.textStyles).length) result.textStyles = undefined;
+    if (result.parts && !Object.keys(result.parts).length) result.parts = undefined;
+    result.content.items = readItems(root, seed);
+    if (result.kind === "hero") {
+      const image = ownElements(root, ".hero-art img")[0];
+      if (image) {
+        const presentation = readPresentation(image);
+        if (presentation.layout || presentation.style) throw new Error("Đặt layout/style của ảnh tại part image, không đặt trên img.");
+        result.content.imageUrl = image.getAttribute("src") ?? undefined;
+      }
+      else if (seed.content.imageUrl) result.content.imageUrl = undefined;
+    }
+    if (result.kind === "columns") result.slots = ownElements(root, "[data-builder-slot-id]").map((element) => {
+      const slotId = element.getAttribute("data-builder-slot-id") ?? ""; const part = readPresentation(element);
+      return { id: slotId, layout: part.layout, style: part.style, blocks: directBlocks(element).map((child) => readBlock(child, seeds)) };
+    });
+    return blockSchema.parse(result);
+  } catch (failure) {
+    const issue = failure instanceof z.ZodError ? failure.issues[0] : undefined;
+    const message = issue ? `${issue.path.join(".")}: ${issue.message}` : failure instanceof Error ? failure.message : "HTML/CSS không hợp lệ.";
+    throw new Error(`Khối “${seed.content.title || seed.kind}”: ${message}`);
   }
-  if (result.kind === "columns") result.slots = ownElements(root, "[data-builder-slot-id]").map((element) => {
-    const slotId = element.getAttribute("data-builder-slot-id") ?? ""; const part = readPresentation(element);
-    return { id: slotId, layout: part.layout, style: part.style, blocks: directBlocks(element).map(readBlock) };
-  });
-  return blockSchema.parse(result);
 }
 
 /** HTML mẫu đã chỉnh → JSON v2; chỉ trả về khi toàn bộ tài liệu hợp lệ. */
 export function htmlToDocument(html: string): BuilderDocument {
   if (html.length > MAX_TEMPLATE_HTML_SIZE) throw new Error("Tệp HTML vượt quá 10 MB.");
-  const parsed = new DOMParser().parseFromString(html, "text/html"); validatePassiveHtml(parsed);
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  if (parsed.querySelector(`[data-builder-format="${READABLE_HTML_FORMAT}"],[data-builder-format="${INLINE_HTML_FORMAT}"]`)) expandReadableMarkers(parsed);
+  validatePassiveHtml(parsed);
+  if (parsed.querySelector(`[data-builder-format="${INLINE_HTML_FORMAT}"]`)) return inlineHtmlToDocument(parsed);
   const metadata = parsed.querySelectorAll("script[data-builder-document]"); if (metadata.length !== 1) throw new Error("Thiếu hoặc trùng metadata tài liệu. Hãy dùng HTML xuất từ builder.");
   const seed = normalizedDocumentSchema.parse(JSON.parse(metadata[0].textContent ?? ""));
-  const pages = parsed.querySelectorAll<HTMLElement>("[data-builder-page]"); if (pages.length !== 1 || pages[0].getAttribute("data-builder-version") !== "2") throw new Error("Template phải có đúng một trang phiên bản 2.");
+  const pages = parsed.querySelectorAll<HTMLElement>("[data-builder-page]"); if (pages.length !== 1) throw new Error("Template phải có đúng một vùng trang.");
+  if (pages[0].getAttribute("data-builder-format") === READABLE_HTML_FORMAT && !pages[0].hasAttribute("data-builder-version")) pages[0].setAttribute("data-builder-version", String(seed.version));
+  if (pages[0].getAttribute("data-builder-version") !== "2") throw new Error("Template phải dùng cấu hình JSON phiên bản 2.");
   const page = pages[0]; const containers = page.querySelectorAll<HTMLElement>("[data-builder-page-blocks]"); if (containers.length !== 1) throw new Error("Thiếu hoặc trùng vùng chứa block của trang.");
+  const format = page.getAttribute("data-builder-format");
+  if (format && format !== "blocks-v1" && format !== READABLE_HTML_FORMAT) throw new Error("Định dạng HTML chưa được hỗ trợ. Hãy dùng tệp xuất từ builder này.");
+  const seeds = format ? new Map(flattenBlocks(seed.blocks).map((block) => [block.id, block])) : undefined;
+  if (format) {
+    if (parsed.querySelectorAll("script").length !== 1) throw new Error("Tệp HTML các block chỉ có một metadata chung.");
+    if (Array.from(parsed.body.children).some((element) => element !== page && element !== metadata[0] && element.tagName !== "STYLE")) throw new Error("Tệp HTML chỉ chứa vùng block. Header/menu/footer được quản lý trong ứng dụng.");
+    if (!page.hasAttribute("data-builder-internal")) {
+      const baseline = new DOMParser().parseFromString(documentToEditorHtml(seed), "text/html").querySelector<HTMLElement>("[data-builder-page]");
+      if (!baseline) throw new Error("Không thể khôi phục cấu trúc các block.");
+      baseline.setAttribute("data-builder-format", format);
+      restoreTemplateContract(page, baseline);
+    }
+  }
   validateStaticContract(page);
   const stylesheet = parsed.querySelector("style[data-builder-template-css]");
   if (!stylesheet || stylesheet.getAttribute("data-builder-template-css") !== stylesheetHash(stylesheet.textContent ?? "")) throw new Error("CSS nền đã thay đổi. Sửa style/class trên phần tử có marker để có thể chuyển về JSON.");
   const responsiveStyles = parsed.querySelector("style[data-builder-responsive-css]");
   if (!responsiveStyles || responsiveStyles.getAttribute("data-builder-responsive-css") !== stylesheetHash(responsiveStyles.textContent ?? "")) throw new Error("CSS được sinh từ cấu hình đã thay đổi. Sửa style trên part/field hoặc responsive trong metadata của block.");
   if (parsed.querySelectorAll("style").length !== 2) throw new Error("Template chỉ hỗ trợ hai stylesheet được sinh sẵn. Sửa inline style trên part/field.");
+  return readDocumentPage(page, containers[0], seed, seeds);
+}
+
+/** Tệp v3 dùng cấu hình HTML thụ động; contract nền được tái tạo trước khi đọc phần người dùng sửa. */
+function inlineHtmlToDocument(parsed: Document): BuilderDocument {
+  if (parsed.querySelector("script")) throw new Error("HTML v3 không dùng script. Giữ cấu hình trong template cuối tệp.");
+  const pages = parsed.querySelectorAll<HTMLElement>("[data-builder-page]");
+  if (pages.length !== 1 || pages[0].getAttribute("data-builder-version") !== "2") throw new Error("Template phải có đúng một trang dùng JSON phiên bản 2.");
+  const page = pages[0];
+  const containers = page.querySelectorAll<HTMLElement>("[data-builder-page-blocks]");
+  if (containers.length !== 1) throw new Error("Thiếu hoặc trùng vùng chứa block.");
+  const settings = parsed.querySelector<HTMLTemplateElement>("template[data-builder-settings]");
+  if (!settings || settings.parentElement !== parsed.body) throw new Error("Giữ cấu hình template ở cuối body, ngoài vùng block.");
+  if (Array.from(parsed.body.children).some((element) => element !== page && element !== settings && element.tagName !== "STYLE")) throw new Error("Tệp HTML chỉ chứa vùng block và cấu hình khôi phục.");
+  for (const marker of ["data-builder-template-css", "data-builder-responsive-css"]) {
+    const styles = parsed.querySelectorAll<HTMLStyleElement>(`style[${marker}]`);
+    if (styles.length !== 1 || styles[0].getAttribute(marker) !== stylesheetHash(styles[0].textContent ?? "")) throw new Error("CSS responsive/trạng thái đã thay đổi. Sửa style tại part/field; chỉnh responsive trong builder.");
+  }
+  if (parsed.querySelectorAll("style").length !== 2) throw new Error("Không thêm stylesheet riêng; chỉnh style trên vùng có marker.");
+  const seed = readInlineSettings(parsed);
+  const baseline = new DOMParser().parseFromString(documentToEditorHtml(seed), "text/html");
+  inlineTemplateStyles(baseline);
+  const originalPage = baseline.querySelector<HTMLElement>("[data-builder-page]");
+  if (!originalPage) throw new Error("Không thể khôi phục cấu trúc block.");
+  originalPage.setAttribute("data-builder-format", INLINE_HTML_FORMAT);
+  // Newline trong style chỉ phục vụ đọc mã; chữ ký đối chiếu theo CSS đã được DOM chuẩn hóa.
+  normalizeInlineStyles(parsed); normalizeInlineStyles(baseline); markStaticContract(originalPage);
+  for (const element of [parsed.documentElement, parsed.body]) {
+    const original = element === parsed.body ? baseline.body : baseline.documentElement;
+    if (element.getAttribute("style") !== original.getAttribute("style")) throw new Error("Style của html/body chưa có ánh xạ. Sửa style tại data-page hoặc các part của block.");
+  }
+  restoreTemplateContract(page, originalPage); validateStaticContract(page);
+  return readDocumentPage(page, containers[0], seed, new Map(flattenBlocks(seed.blocks).map((block) => [block.id, block])));
+}
+
+/** Đọc cây page/slot chung cho định dạng cũ và v3 sau khi contract đã hợp lệ. */
+function readDocumentPage(page: HTMLElement, container: HTMLElement, seed: BuilderDocument, seeds?: ReadonlyMap<string, BuilderBlock>): BuilderDocument {
   const presentation = readPresentation(page);
-  const blocks = directBlocks(containers[0]).map(readBlock);
+  const blocks = directBlocks(container).map((block) => readBlock(block, seeds));
   if (page.querySelectorAll("[data-builder-block-id]").length !== blocks.reduce((count, block) => count + countBlocks(block), 0)) throw new Error("Có block nằm ngoài vùng page/slot hoặc trong wrapper không được hỗ trợ.");
   return normalizedDocumentSchema.parse({ ...seed, meta: { name: page.getAttribute("data-builder-name") ?? seed.meta.name },
     theme: { primaryColor: page.getAttribute("data-builder-primary-color") || undefined, fontFamily: page.getAttribute("data-builder-font-family") || undefined },
