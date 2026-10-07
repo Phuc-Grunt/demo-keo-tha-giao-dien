@@ -276,7 +276,8 @@ const Inspector = ({
                   className="field-input field-textarea items-textarea"
                   value={itemStrings(block).join("\n")}
                   onChange={(event) =>
-                    updateContent(block.id, { items: itemsFromStrings(block.kind, block.id, event.target.value.split("\n").slice(0, 12), block.content.items),
+                    updateContent(block.id, {
+                      items: itemsFromStrings(block.kind, block.id, event.target.value.split("\n").slice(0, 12), block.content.items),
                     })
                   }
                   rows={5}
@@ -425,9 +426,9 @@ const Inspector = ({
                 value={source.mode}
                 onChange={(event) =>
                   updateSource(block.id, {
-                      ...source,
-                      mode: event.target.value as "latest" | "hot",
-                    })
+                    ...source,
+                    mode: event.target.value as "latest" | "hot",
+                  })
                 }
               >
                 <option value="latest">Mới nhất</option>
@@ -445,7 +446,8 @@ const Inspector = ({
                 className="field-input field-textarea"
                 value={itemStrings(block).join("\n")}
                 onChange={(event) =>
-                  updateContent(block.id, { items: itemsFromStrings(block.kind, block.id, event.target.value.split("\n").slice(0, 4), block.content.items),
+                  updateContent(block.id, {
+                    items: itemsFromStrings(block.kind, block.id, event.target.value.split("\n").slice(0, 4), block.content.items),
                   })
                 }
                 rows={4}
@@ -466,12 +468,12 @@ const Inspector = ({
                 value={source.limit}
                 onChange={(event) =>
                   updateSource(block.id, {
-                      ...source,
-                      limit: Math.min(
-                        12,
-                        Math.max(1, Number(event.target.value) || 1),
-                      ),
-                    })
+                    ...source,
+                    limit: Math.min(
+                      12,
+                      Math.max(1, Number(event.target.value) || 1),
+                    ),
+                  })
                 }
               />
             </>
@@ -487,9 +489,9 @@ const Inspector = ({
                 value={source.columns ?? 3}
                 onChange={(event) =>
                   updateSource(block.id, {
-                      ...source,
-                      columns: Number(event.target.value),
-                    })
+                    ...source,
+                    columns: Number(event.target.value),
+                  })
                 }
               >
                 {[1, 2, 3, 4].map((number) => (
