@@ -15,6 +15,10 @@ import VideoBlock from "./blocks/VideoBlock";
 import EventsBlock from "./blocks/EventsBlock";
 import TabsBlock from "./blocks/TabsBlock";
 import ColumnsBlock from "./blocks/ColumnsBlock/ColumnsBlock";
+import ImageBlock from "./blocks/ImageBlock";
+import HeadingBlock from "./blocks/HeadingBlock";
+import ParagraphBlock from "./blocks/ParagraphBlock";
+import CategoryListBlock from "./blocks/CategoryListBlock";
 
 /** Style cho phép gán biến CSS tùy chỉnh (bắt đầu bằng "--"). */
 type CssVarStyle = CSSProperties & Record<`--${string}`, string>;
@@ -62,6 +66,10 @@ export const BlockRenderer = (props: BlockViewProps) => {
     case "events": content = <EventsBlock {...props} />; break;
     case "tabs": content = <TabsBlock {...props} />; break;
     case "columns": content = <ColumnsBlock {...props} />; break;
+    case "image": content = <ImageBlock {...props} />; break;
+    case "heading": content = <HeadingBlock {...props} />; break;
+    case "paragraph": content = <ParagraphBlock {...props} />; break;
+    case "category_list": content = <CategoryListBlock {...props} />; break;
   }
   return <div className={hooks.className} style={hooks.style} data-builder-block-id={props.block.id} data-builder-block-kind={props.block.kind}>
     <style data-builder-managed-style>{blockAppearanceCss(props.block)}</style>

@@ -60,8 +60,12 @@ export const blockCatalog: Record<BlockKind, { label: string; description: strin
   events: { label: "Lịch sự kiện", description: "Danh sách sự kiện sắp tới", category: "Tiện ích" },
   stats: { label: "Số liệu", description: "Các chỉ số nổi bật", category: "Tiện ích" },
   links: { label: "Liên kết nhanh", description: "Lối tắt đến chuyên mục", category: "Điều hướng" },
-  text: { label: "Đoạn văn", description: "Nội dung văn bản đơn giản", category: "Cơ bản" },
+  text: { label: "Đoạn văn (Cũ)", description: "Nội dung văn bản đơn giản", category: "Cơ bản" },
   columns: { label: "Lưới cột", description: "Chia thành nhiều cột kéo thả", category: "Cơ bản" },
+  image: { label: "Hình ảnh", description: "Hình ảnh độc lập với tuỳ chỉnh kích thước", category: "Cơ bản" },
+  heading: { label: "Tiêu đề", description: "Văn bản tiêu đề lớn (H1-H6)", category: "Cơ bản" },
+  paragraph: { label: "Đoạn văn", description: "Văn bản nhiều dòng tuỳ chỉnh chi tiết", category: "Cơ bản" },
+  category_list: { label: "Thông tin danh mục", description: "Danh sách liên kết dạng sidebar", category: "Tiện ích" },
 };
 
 type BlockDefaults = Omit<LegacyBuilderBlock, "id" | "kind">;
@@ -198,6 +202,41 @@ const defaults: Record<BlockKind, BlockDefaults> = {
     items: [],
     dataSource: sourceDefaults.columns,
     slots: [[], []], // 2 cột mặc định
+  },
+  image: {
+    eyebrow: "",
+    title: "",
+    description: "",
+    accent: "blue",
+    items: [],
+    imageUrl: "",
+    variant: "full",
+    dataSource: sourceDefaults.image,
+  },
+  heading: {
+    eyebrow: "",
+    title: "Tiêu đề mẫu",
+    description: "",
+    accent: "blue",
+    items: [],
+    variant: "h2",
+    dataSource: sourceDefaults.heading,
+  },
+  paragraph: {
+    eyebrow: "",
+    title: "",
+    description: "Đoạn văn bản mẫu. Bạn có thể thay đổi kích thước chữ, màu sắc, màu nền và viền ở bảng công cụ bên phải.",
+    accent: "blue",
+    items: [],
+    dataSource: sourceDefaults.paragraph,
+  },
+  category_list: {
+    eyebrow: "",
+    title: "CƠ QUAN BAN HÀNH",
+    description: "",
+    accent: "blue",
+    items: ["Quốc hội", "Chủ tịch nước", "Chính phủ", "Thủ tướng Chính phủ", "Bộ Giáo dục và Đào tạo"],
+    dataSource: sourceDefaults.category_list,
   },
 };
 

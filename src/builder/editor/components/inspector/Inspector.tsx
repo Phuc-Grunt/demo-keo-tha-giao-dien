@@ -118,7 +118,7 @@ const Inspector = ({
     );
 
   const hasItems =
-    ["news", "notice", "stats", "links", "gallery", "featured", "ticker", "video", "events"].includes(block.kind);
+    ["news", "notice", "stats", "links", "gallery", "featured", "ticker", "video", "events", "category_list"].includes(block.kind);
   // tabs block dùng items làm tên tab
   const hasTabItems = block.kind === "tabs";
   const isColumnsBlock = block.kind === "columns";
@@ -126,7 +126,7 @@ const Inspector = ({
   const isArticleBlock = ["news", "notice", "ticker", "featured", "video", "events", "tabs"].includes(block.kind);
   const isRepeatBlock = [
     "news", "notice", "stats", "links", "gallery",
-    "ticker", "featured", "video", "events", "tabs",
+    "ticker", "featured", "video", "events", "tabs", "category_list"
   ].includes(block.kind);
 
   /** Cập nhật cỡ chữ/màu chữ của một phần nội dung; xóa khóa khi quay về mặc định. */
@@ -214,58 +214,74 @@ const Inspector = ({
             <div className="inspector-section-heading">
               NỘI DUNG <ChevronDown size={14} />
             </div>
-            <label className="field-label" htmlFor="eyebrow">
-              Nhãn nhỏ
-            </label>
-            <input
-              id="eyebrow"
-              className="field-input"
-              value={block.content.eyebrow}
-              maxLength={100}
-              onChange={(event) =>
-                updateContent(block.id, { eyebrow: event.target.value })
-              }
-            />
-            <TextStyleControls
-              idPrefix="eyebrow"
-              value={block.textStyles?.eyebrow}
-              onChange={(style) => updateTextStyle("eyebrow", style)}
-            />
-            <label className="field-label" htmlFor="title">
-              Tiêu đề
-            </label>
-            <input
-              id="title"
-              className="field-input"
-              value={block.content.title}
-              maxLength={200}
-              onChange={(event) =>
-                updateContent(block.id, { title: event.target.value })
-              }
-            />
-            <TextStyleControls
-              idPrefix="title"
-              value={block.textStyles?.title}
-              onChange={(style) => updateTextStyle("title", style)}
-            />
-            <label className="field-label" htmlFor="description">
-              Mô tả
-            </label>
-            <textarea
-              id="description"
-              className="field-input field-textarea"
-              value={block.content.description}
-              maxLength={1000}
-              onChange={(event) =>
-                updateContent(block.id, { description: event.target.value })
-              }
-              rows={4}
-            />
-            <TextStyleControls
-              idPrefix="description"
-              value={block.textStyles?.description}
-              onChange={(style) => updateTextStyle("description", style)}
-            />
+            {block.kind !== "image" && block.kind !== "heading" && block.kind !== "paragraph" && (
+              <>
+                <label className="field-label" htmlFor="eyebrow">
+                  Nhãn nhỏ
+                </label>
+                <input
+                  id="eyebrow"
+                  className="field-input"
+                  value={block.content.eyebrow}
+                  maxLength={100}
+                  onChange={(event) =>
+                    updateContent(block.id, { eyebrow: event.target.value })
+                  }
+                />
+                <TextStyleControls
+                  idPrefix="eyebrow"
+                  value={block.textStyles?.eyebrow}
+                  onChange={(style) => updateTextStyle("eyebrow", style)}
+                />
+              </>
+            )}
+            {block.kind !== "image" && block.kind !== "paragraph" && (
+              <>
+                <label className="field-label" htmlFor="title">
+                  Tiêu đề
+                </label>
+                <input
+                  id="title"
+                  className="field-input"
+                  value={block.content.title}
+                  maxLength={200}
+                  onChange={(event) =>
+                    updateContent(block.id, { title: event.target.value })
+                  }
+                />
+                {block.kind !== "heading" && (
+                  <TextStyleControls
+                    idPrefix="title"
+                    value={block.textStyles?.title}
+                    onChange={(style) => updateTextStyle("title", style)}
+                  />
+                )}
+              </>
+            )}
+            {block.kind !== "image" && block.kind !== "heading" && (
+              <>
+                <label className="field-label" htmlFor="description">
+                  Mô tả
+                </label>
+                <textarea
+                  id="description"
+                  className="field-input field-textarea"
+                  value={block.content.description}
+                  maxLength={1000}
+                  onChange={(event) =>
+                    updateContent(block.id, { description: event.target.value })
+                  }
+                  rows={4}
+                />
+                {block.kind !== "paragraph" && (
+                  <TextStyleControls
+                    idPrefix="description"
+                    value={block.textStyles?.description}
+                    onChange={(style) => updateTextStyle("description", style)}
+                  />
+                )}
+              </>
+            )}
             {hasItems && (
               <>
                 <label className="field-label" htmlFor="items">
@@ -284,7 +300,7 @@ const Inspector = ({
                 />
               </>
             )}
-            {block.kind === "hero" && (
+            {(block.kind === "hero" || block.kind === "image") && (
               <>
                 <label className="field-label" htmlFor="imageUrl">
                   Hình ảnh (URL)
@@ -503,7 +519,7 @@ const Inspector = ({
             </>
           )}
         </div>
-        {!isColumnsBlock && (
+        {!isColumnsBlock && block.kind !== "image" && block.kind !== "heading" && block.kind !== "paragraph" && (
           <div className="inspector-section">
             <div className="inspector-section-heading">
               GIAO DIỆN <ChevronDown size={14} />
@@ -571,6 +587,299 @@ const Inspector = ({
               onChange={(font) => updateTheme(block.id, { fontFamily: font || undefined })}
             />
           </div>
+        )}
+        {block.kind === "image" && (
+          <>
+            <div className="inspector-section">
+              <div className="inspector-section-heading">
+                KÍCH THƯỚC (Dimensions) <ChevronDown size={14} />
+              </div>
+
+              <label className="field-label" htmlFor="aspect-ratio">
+                TỶ LỆ (ASPECT RATIO)
+              </label>
+              <select
+                id="aspect-ratio"
+                className="field-input"
+                value={block.layout?.aspectRatio || ""}
+                onChange={(e) => update(block.id, { layout: { ...block.layout, aspectRatio: e.target.value || undefined } })}
+              >
+                <option value="">Original</option>
+                <option value="16/9">16:9</option>
+                <option value="4/3">4:3</option>
+                <option value="1/1">1:1</option>
+                <option value="3/4">3:4</option>
+                <option value="9/16">9:16</option>
+              </select>
+
+              <label className="field-label" htmlFor="width">
+                CHIỀU RỘNG (WIDTH)
+              </label>
+              <input
+                id="width"
+                className="field-input"
+                type="text"
+                placeholder="VD: 100%, 300px, auto..."
+                value={block.layout?.width || ""}
+                onChange={(e) => update(block.id, { layout: { ...block.layout, width: e.target.value || undefined } })}
+              />
+
+              <label className="field-label" htmlFor="height">
+                CHIỀU CAO (HEIGHT)
+              </label>
+              <input
+                id="height"
+                className="field-input"
+                type="text"
+                placeholder="VD: 100%, 300px, auto..."
+                value={block.layout?.height || ""}
+                onChange={(e) => update(block.id, { layout: { ...block.layout, height: e.target.value || undefined } })}
+              />
+
+              <label className="field-label" htmlFor="margin">
+                MARGIN (px)
+              </label>
+              <input
+                id="margin"
+                className="field-input"
+                type="number"
+                placeholder="0"
+                value={block.style?.margin?.top ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value ? Number(e.target.value) : undefined;
+                  update(block.id, {
+                    style: {
+                      ...block.style,
+                      margin: val !== undefined ? { top: val, right: val, bottom: val, left: val } : undefined
+                    }
+                  });
+                }}
+              />
+            </div>
+
+            <div className="inspector-section">
+              <div className="inspector-section-heading">
+                VIỀN (Borders) <ChevronDown size={14} />
+              </div>
+
+              <label className="field-label" htmlFor="border-width">
+                ĐỘ DÀY VIỀN (BORDER) px
+              </label>
+              <input
+                id="border-width"
+                className="field-input"
+                type="number"
+                min="0"
+                max="20"
+                placeholder="0"
+                value={block.style?.borderWidth ?? ""}
+                onChange={(e) => update(block.id, { style: { ...block.style, borderWidth: e.target.value ? Number(e.target.value) : undefined, borderStyle: e.target.value ? 'solid' : undefined } })}
+              />
+
+              <label className="field-label" htmlFor="border-radius">
+                BO GÓC (RADIUS) px
+              </label>
+              <input
+                id="border-radius"
+                className="field-input"
+                type="number"
+                min="0"
+                max="512"
+                placeholder="8"
+                value={block.style?.borderRadius ?? ""}
+                onChange={(e) => update(block.id, { style: { ...block.style, borderRadius: e.target.value ? Number(e.target.value) : undefined } })}
+              />
+            </div>
+          </>
+        )}
+        {(block.kind === "heading" || block.kind === "paragraph") && (
+          <>
+            {block.kind === "heading" && (
+              <div className="inspector-section" style={{ paddingBottom: 16 }}>
+                <div className="inspector-section-heading">
+                  Thẻ Tiêu đề <ChevronDown size={14} />
+                </div>
+                <div className="variant-options" style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                  {["h1", "h2", "h3", "h4", "h5", "h6"].map((tag) => (
+                    <button
+                      key={tag}
+                      className={`variant-btn${(blockVariant || "h2") === tag ? " variant-btn-active" : ""}`}
+                      style={{
+                        flex: 1,
+                        padding: '6px 0',
+                        border: 'none',
+                        borderRight: tag !== "h6" ? '1px solid #e2e8f0' : 'none',
+                        background: (blockVariant || "h2") === tag ? '#e0f2fe' : '#fff',
+                        color: (blockVariant || "h2") === tag ? '#0369a1' : '#475569',
+                        fontWeight: (blockVariant || "h2") === tag ? 600 : 400,
+                        fontSize: 13
+                      }}
+                      onClick={() => update(block.id, { variant: tag })}
+                    >
+                      {tag.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="inspector-section">
+              <div className="inspector-section-heading">
+                Typography <ChevronDown size={14} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 6, marginBottom: 16, background: '#f8fafc' }}>
+                <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>Color</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="color"
+                    style={{ width: 24, height: 24, padding: 0, border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', cursor: 'pointer', background: '#fff' }}
+                    value={block.textStyles?.[block.kind === "heading" ? "title" : "description"]?.color || "#000000"}
+                    onChange={(e) => updateTextStyle(block.kind === "heading" ? "title" : "description", { ...block.textStyles?.[block.kind === "heading" ? "title" : "description"], color: e.target.value })}
+                  />
+                  <span style={{ fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>
+                    {block.textStyles?.[block.kind === "heading" ? "title" : "description"]?.color || "#000000"}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label className="field-label" style={{ margin: 0 }}>FONT SIZE</label>
+              </div>
+
+              <div className="variant-options" style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                {[
+                  { label: "S", value: 14 },
+                  { label: "M", value: 16 },
+                  { label: "L", value: 20 },
+                  { label: "XL", value: 24 },
+                  { label: "XXL", value: 32 }
+                ].map((opt, i) => {
+                  const currentSize = block.textStyles?.[block.kind === "heading" ? "title" : "description"]?.fontSize;
+                  const isActive = currentSize === opt.value || (!currentSize && opt.label === "M");
+                  return (
+                    <button
+                      key={opt.label}
+                      className={`variant-btn${isActive ? " variant-btn-active" : ""}`}
+                      style={{
+                        flex: 1,
+                        padding: '6px 0',
+                        border: 'none',
+                        borderRight: i < 4 ? '1px solid #e2e8f0' : 'none',
+                        background: isActive ? '#e0f2fe' : '#fff',
+                        color: isActive ? '#0369a1' : '#475569',
+                        fontWeight: isActive ? 600 : 400,
+                        fontSize: 13
+                      }}
+                      onClick={() => updateTextStyle(block.kind === "heading" ? "title" : "description", { ...block.textStyles?.[block.kind === "heading" ? "title" : "description"], fontSize: opt.value })}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="inspector-section">
+              <div className="inspector-section-heading">
+                Background <ChevronDown size={14} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', background: '#fff' }}>
+                {block.kind === "heading" && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderBottom: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                    <input type="radio" name="bg-type" checked={!!block.style?.backgroundImage} onChange={() => {
+                      const url = prompt("Nhập URL hình ảnh nền:");
+                      if (url !== null) update(block.id, { style: { ...block.style, backgroundImage: `url(${url})`, backgroundColor: undefined } });
+                    }} />
+                    <span style={{ fontSize: 13, color: '#334155' }}>Image URL</span>
+                  </label>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', cursor: 'pointer' }}>
+                  <input type="radio" name="bg-type" checked={!block.style?.backgroundImage} onChange={() => update(block.id, { style: { ...block.style, backgroundImage: undefined } })} />
+                  <span style={{ fontSize: 13, color: '#334155' }}>Solid Color</span>
+                </label>
+              </div>
+              {!block.style?.backgroundImage && (
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <input type="color" style={{ width: 32, height: 32, padding: 0, border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }} value={block.style?.backgroundColor || "#ffffff"} onChange={(e) => update(block.id, { style: { ...block.style, backgroundColor: e.target.value } })} />
+                  <input type="text" className="field-input" style={{ flex: 1 }} value={block.style?.backgroundColor || "#ffffff"} onChange={(e) => update(block.id, { style: { ...block.style, backgroundColor: e.target.value } })} />
+                </div>
+              )}
+            </div>
+
+            <div className="inspector-section">
+              <div className="inspector-section-heading">
+                Dimensions <ChevronDown size={14} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label className="field-label">PADDING (px)</label>
+                  <input
+                    className="field-input"
+                    type="number"
+                    placeholder="0"
+                    value={block.style?.padding?.top ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value ? Number(e.target.value) : undefined;
+                      update(block.id, { style: { ...block.style, padding: val !== undefined ? { top: val, right: val, bottom: val, left: val } : undefined } });
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="field-label">MARGIN (px)</label>
+                  <input
+                    className="field-input"
+                    type="number"
+                    placeholder="0"
+                    value={block.style?.margin?.top ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value ? Number(e.target.value) : undefined;
+                      update(block.id, { style: { ...block.style, margin: val !== undefined ? { top: val, right: val, bottom: val, left: val } : undefined } });
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="inspector-section">
+              <div className="inspector-section-heading">
+                Borders <ChevronDown size={14} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label className="field-label">BORDER (px)</label>
+                  <input
+                    className="field-input"
+                    type="number"
+                    placeholder="0"
+                    value={block.style?.borderWidth ?? ""}
+                    onChange={(e) => update(block.id, { style: { ...block.style, borderWidth: e.target.value ? Number(e.target.value) : undefined, borderStyle: e.target.value ? 'solid' : undefined } })}
+                  />
+                </div>
+                <div>
+                  <label className="field-label">RADIUS (px)</label>
+                  <input
+                    className="field-input"
+                    type="number"
+                    placeholder="0"
+                    value={block.style?.borderRadius ?? ""}
+                    onChange={(e) => update(block.id, { style: { ...block.style, borderRadius: e.target.value ? Number(e.target.value) : undefined } })}
+                  />
+                </div>
+              </div>
+
+              {block.kind === "heading" && (
+                <>
+                  <label className="field-label" style={{ marginTop: 16 }}>SHADOW</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#f8fafc', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!block.style?.boxShadow} onChange={(e) => update(block.id, { style: { ...block.style, boxShadow: e.target.checked ? '0 4px 6px rgba(0,0,0,0.1)' : undefined } })} />
+                    <span style={{ fontSize: 13, color: '#334155' }}>Drop shadow</span>
+                  </label>
+                </>
+              )}
+            </div>
+          </>
         )}
         <div className="inspector-actions">
           <button onClick={() => duplicate(block.id)}>
