@@ -185,7 +185,7 @@ export function normalizeLegacyBlock(block: LegacyBuilderBlock): BuilderBlock {
   const data: BlockDataConfig = articleKinds.includes(block.kind)
     ? { source: { type: "articles", categorySlug: source.categorySlug }, query: { mode: source.mode, limit: source.limit } }
     : block.kind === "columns" ? { source: { type: "static" }, query: { limit: 1 } }
-    : { source: { type: "content_entries", kind: block.kind === "stats" ? "stat" : block.kind === "links" ? "link" : block.kind === "hero" ? "hero" : block.kind === "gallery" ? "gallery" : "text" }, query: { limit: source.limit } };
+      : { source: { type: "content_entries", kind: block.kind === "stats" ? "stat" : block.kind === "links" ? "link" : block.kind === "hero" ? "hero" : block.kind === "gallery" ? "gallery" : "text" }, query: { limit: source.limit } };
   const textStyles: BlockTextStyles = {};
   for (const target of textTargets) {
     const old = block.textStyles?.[target];
