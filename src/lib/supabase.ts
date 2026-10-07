@@ -20,7 +20,7 @@ const articleResponseSchema: z.ZodType<Article> = z.object({
   categories: z.object({ name: z.string(), slug: z.string() }).nullable(),
 });
 interface ArticleQueryOptions { categorySlug?: string; mode?: "latest" | "hot"; limit?: number }
-export const contentKinds = ["hero", "stat", "link", "text", "gallery"] as const;
+export const contentKinds = ["hero", "stat", "link", "text", "gallery", "category_list"] as const;
 export type ContentKind = (typeof contentKinds)[number];
 export type ContentEntry = {
   id: string;

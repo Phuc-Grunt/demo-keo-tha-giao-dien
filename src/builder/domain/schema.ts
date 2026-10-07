@@ -15,6 +15,10 @@ export const blockKinds = [
   "events",
   "tabs",
   "columns",
+  "image",
+  "heading",
+  "paragraph",
+  "category_list",
 ] as const;
 export type BlockKind = (typeof blockKinds)[number];
 export const partNames = [
@@ -114,8 +118,10 @@ export const layoutSchema = z
       ])
       .optional(),
     width: lengthSchema.optional(),
+    height: lengthSchema.optional(),
     maxWidth: lengthSchema.optional(),
     minHeight: lengthSchema.optional(),
+    aspectRatio: z.string().max(20).optional(),
   })
   .strict();
 export const styleSchema = z
@@ -134,6 +140,8 @@ export const styleSchema = z
     borderColor: colorSchema.optional(),
     borderStyle: z.enum(["solid", "dashed", "dotted", "none"]).optional(),
     opacity: z.number().min(0).max(1).optional(),
+    backgroundImage: z.string().max(1000).optional(),
+    boxShadow: z.string().max(200).optional(),
   })
   .strict();
 export const textStyleSchema = z
@@ -221,7 +229,7 @@ const dataSchema = z
       z
         .object({
           type: z.literal("content_entries"),
-          kind: z.enum(["hero", "stat", "link", "text", "gallery"]),
+          kind: z.enum(["hero", "stat", "link", "text", "gallery", "category_list"]),
         })
         .strict(),
       z.object({ type: z.literal("static") }).strict(),
@@ -280,6 +288,9 @@ const variants: Partial<Record<BlockKind, readonly string[]>> = {
   video: ["sidebar", "grid"],
   events: ["timeline", "cards"],
   tabs: ["underline", "pills"],
+  image: ["thumbnail", "medium", "large", "full"],
+  heading: ["h1", "h2", "h3", "h4", "h5", "h6"],
+  category_list: ["default"],
 };
 
 /** Kiểm tra block con và những cấu hình được renderer của loại block hỗ trợ. */
@@ -590,6 +601,10 @@ export const sourceDefaults: Record<BlockKind, BlockSourceConfig> = {
   events: { categorySlug: "", mode: "latest", limit: 5, columns: 2 },
   tabs: { categorySlug: "", mode: "latest", limit: 6, columns: 3 },
   columns: { categorySlug: "", mode: "latest", limit: 1, columns: 2 },
+  image: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  heading: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  paragraph: { categorySlug: "", mode: "latest", limit: 1, columns: 1 },
+  category_list: { categorySlug: "", mode: "latest", limit: 10, columns: 1 },
 };
 export const articleKinds: readonly BlockKind[] = [
   "news",
@@ -622,29 +637,20 @@ export function itemsFromStrings(
 /** Adapter đọc tài liệu cũ và chuyển đúng nhóm, đơn vị và cây slot. */
 export function normalizeLegacyBlock(block: LegacyBuilderBlock): BuilderBlock {
   const source = { ...sourceDefaults[block.kind], ...block.dataSource };
-  const data: BlockDataConfig = articleKinds.includes(block.kind)
+  const data: BlockDataConfig | undefined = articleKinds.includes(block.kind)
     ? {
-        source: { type: "articles", categorySlug: source.categorySlug },
-        query: { mode: source.mode, limit: source.limit },
+      source: { type: "articles", categorySlug: source.categorySlug },
+      query: { mode: source.mode, limit: source.limit },
+    }
+    : ["hero", "stats", "links", "text", "gallery", "category_list"].includes(block.kind)
+      ? {
+        source: {
+          type: "content_entries",
+          kind: block.kind === "stats" ? "stat" : block.kind === "links" ? "link" : block.kind as any,
+        },
+        query: { limit: source.limit },
       }
-    : block.kind === "columns"
-      ? { source: { type: "static" }, query: { limit: 1 } }
-      : {
-          source: {
-            type: "content_entries",
-            kind:
-              block.kind === "stats"
-                ? "stat"
-                : block.kind === "links"
-                  ? "link"
-                  : block.kind === "hero"
-                    ? "hero"
-                    : block.kind === "gallery"
-                      ? "gallery"
-                      : "text",
-          },
-          query: { limit: source.limit },
-        };
+      : undefined;
   const textStyles: BlockTextStyles = {};
   for (const target of textTargets) {
     const old = block.textStyles?.[target];
@@ -672,34 +678,34 @@ export function normalizeLegacyBlock(block: LegacyBuilderBlock): BuilderBlock {
     behavior:
       block.autoSlide !== undefined || block.slideInterval !== undefined
         ? {
-            slideshow: {
-              autoplay: block.autoSlide ?? false,
-              intervalMs: (block.slideInterval ?? 3) * 1000,
-            },
-          }
+          slideshow: {
+            autoplay: block.autoSlide ?? false,
+            intervalMs: (block.slideInterval ?? 3) * 1000,
+          },
+        }
         : undefined,
     layout:
       block.kind === "columns"
         ? {
-            display: "grid",
-            gridTemplateColumns: source.gridTemplate || undefined,
-            gap: source.gap,
-          }
+          display: "grid",
+          gridTemplateColumns: source.gridTemplate || undefined,
+          gap: source.gap,
+        }
         : undefined,
     style:
       block.kind === "columns"
         ? {
-            backgroundColor: source.backgroundColor || undefined,
-            padding:
-              source.padding === undefined
-                ? undefined
-                : {
-                    top: source.padding,
-                    right: source.padding,
-                    bottom: source.padding,
-                    left: source.padding,
-                  },
-          }
+          backgroundColor: source.backgroundColor || undefined,
+          padding:
+            source.padding === undefined
+              ? undefined
+              : {
+                top: source.padding,
+                right: source.padding,
+                bottom: source.padding,
+                left: source.padding,
+              },
+        }
         : undefined,
     parts: templateSelectors[block.kind].parts.items
       ? { items: { layout: { columns: source.columns } } }
@@ -707,12 +713,12 @@ export function normalizeLegacyBlock(block: LegacyBuilderBlock): BuilderBlock {
     slots:
       block.kind === "columns"
         ? Array.from(
-            { length: Math.max(count, block.slots?.length ?? 0) },
-            (_, index) => ({
-              id: `${block.id}-column-${index + 1}`,
-              blocks: (block.slots?.[index] ?? []).map(normalizeLegacyBlock),
-            }),
-          )
+          { length: Math.max(count, block.slots?.length ?? 0) },
+          (_, index) => ({
+            id: `${block.id}-column-${index + 1}`,
+            blocks: (block.slots?.[index] ?? []).map(normalizeLegacyBlock),
+          }),
+        )
         : undefined,
   };
 }

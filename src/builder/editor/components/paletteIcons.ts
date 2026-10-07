@@ -1,4 +1,4 @@
-import { Blocks, CalendarDays, Clapperboard, Columns2, Image as ImageIcon, LayoutGrid, LayoutTemplate, Link2, Megaphone, PanelTop, Rss, Type } from "lucide-react";
+import { Blocks, CalendarDays, Clapperboard, Columns2, Image as ImageIcon, LayoutGrid, LayoutTemplate, Link2, Megaphone, PanelTop, Rss, Type, Heading, AlignLeft, List } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BlockKind } from "../../domain/model";
 
@@ -16,6 +16,10 @@ const paletteIcons = {
   events: CalendarDays,
   tabs: PanelTop,
   columns: Columns2,
+  image: ImageIcon,
+  heading: Heading,
+  paragraph: AlignLeft,
+  category_list: List,
 } satisfies Record<BlockKind, LucideIcon>;
 
 export default paletteIcons;

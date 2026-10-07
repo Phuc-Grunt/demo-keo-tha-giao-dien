@@ -244,7 +244,7 @@ function readData(root: HTMLElement, seed: BuilderBlock): BlockDataConfig | unde
     return { source: { type, categorySlug: root.getAttribute("data-builder-category") ?? "" }, query: { limit, mode } };
   }
   if (type === "content_entries") {
-    const kind = (["hero", "stat", "link", "text", "gallery"] as const).find((candidate) => candidate === root.getAttribute("data-builder-content-kind"));
+    const kind = (["hero", "stat", "link", "text", "gallery", "category_list"] as const).find((candidate) => candidate === root.getAttribute("data-builder-content-kind"));
     if (!kind) throw new Error("Loại content_entries không hợp lệ."); return { source: { type, kind }, query: { limit } };
   }
   if (type === "static") return { source: { type }, query: { limit } };

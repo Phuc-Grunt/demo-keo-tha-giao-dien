@@ -23,6 +23,10 @@ export const templateSelectors: Record<BlockKind, TemplateSelectors> = {
   events: { parts: { ...commonParts, items: ".event-cards, .events-timeline", item: ".event-card, .event-row" }, fields: headingFields, item: ".event-card, .event-row", itemTitle: ".event-card-title, .event-title" },
   tabs: { parts: { ...commonParts, items: ".tabs-body", item: ".tab-row", image: ".tab-thumb" }, fields: headingFields, item: ".tabs-btn" },
   columns: { parts: { root: ":scope > .portal-columns-grid, :scope > .columns-block > .columns-grid" }, fields: {}, item: "" },
+  category_list: { parts: { root: ":scope > .portal-category-list-block" }, fields: { title: ".category-list-header span" }, item: ".category-list-item" },
+  image: { parts: { ...commonParts, image: ".portal-image-wrapper img" }, fields: headingFields, item: "" },
+  heading: { parts: commonParts, fields: { title: ".portal-heading-text" }, item: "" },
+  paragraph: { parts: commonParts, fields: { description: ".portal-paragraph-text" }, item: "" },
 };
 
 /** Chuyển layout chuẩn thành các khai báo CSS với đơn vị nhất quán. */
