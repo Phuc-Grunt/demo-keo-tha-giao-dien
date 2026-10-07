@@ -1,7 +1,7 @@
-import { BlockRenderer } from "@/builder/BlockRenderer";
-import { PortalChrome } from "@/builder/PortalChrome";
+import { BlockRenderer } from "@/builder/renderer/BlockRenderer";
+import { PortalChrome } from "@/builder/renderer/PortalChrome";
 import Link from "next/link";
-import { flattenBlocks, getPageWidth, getBlockSource, starterDocument } from "@/builder/model";
+import { flattenBlocks, getPageWidth, getBlockSource, starterDocument } from "@/builder/domain/model";
 import { getArticles, getContentEntries, getPublishedPage, hasPublicDatabase } from "@/lib/supabase";
 import type { BlockData } from "@/builder/builderApi";
 
