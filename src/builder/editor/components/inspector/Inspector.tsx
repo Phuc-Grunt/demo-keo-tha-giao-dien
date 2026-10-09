@@ -11,6 +11,7 @@ interface InspectorProps {
   mobileOpen: boolean;
   onClose: () => void;
   categories: Category[];
+  templateMode?: boolean;
 }
 
 interface VariantOption {
@@ -23,6 +24,7 @@ const Inspector = ({
   mobileOpen,
   onClose,
   categories,
+  templateMode = false,
 }: InspectorProps) => {
   const selectedId = useBuilderStore((state) => state.selectedId);
   const block = useBuilderStore((state) =>
@@ -50,7 +52,7 @@ const Inspector = ({
         <div className="panel-header">
           <div>
             <span className="panel-kicker">THIẾT LẬP</span>
-            <h2>Thuộc tính trang</h2>
+            <h2>{templateMode ? "Thuộc tính mẫu" : "Thuộc tính trang"}</h2>
           </div>
           <button
             className="mobile-close"
@@ -73,7 +75,7 @@ const Inspector = ({
             </p>
           </div>
           <label className="field-label" htmlFor="page-name">
-            Tên trang
+            {templateMode ? "Tên mẫu" : "Tên trang"}
           </label>
           <input
             id="page-name"
@@ -87,7 +89,7 @@ const Inspector = ({
           </label>
           <PageWidthControl value={pageWidth} onChange={setPageWidth} showPresets />
           <p className="field-help">
-            Áp dụng cho trình dựng, bản xem trước và trang đã xuất bản.
+            {templateMode ? "Áp dụng cho bản xem trước và mẫu được lưu." : "Áp dụng cho trình dựng, bản xem trước và trang đã xuất bản."}
           </p>
 
           <label className="field-label" htmlFor="page-theme">

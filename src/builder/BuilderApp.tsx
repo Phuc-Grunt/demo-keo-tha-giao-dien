@@ -25,6 +25,7 @@ import {
   Eye,
   FileText,
   LayoutGrid,
+  LayoutTemplate,
   Monitor,
   MoreHorizontal,
   Redo2,
@@ -52,7 +53,7 @@ import {
   PageWidthControl,
   FontPicker,
 } from "./editor/components/inspector/InspectorControls";
-import { useBuilderStore } from "./editor/store";
+import { TEMPLATE_DRAFT_STORAGE_KEY, useBuilderStore } from "./editor/store";
 import * as builderApi from "./builderApi";
 import type { BlockData } from "./builderApi";
 import type { Category } from "@/lib/supabase";
@@ -62,10 +63,17 @@ import PaletteItem from "./editor/components/PaletteItem";
 import paletteIcons from "./editor/components/paletteIcons";
 import HtmlEditor from "./editor/components/htmlEditor/HtmlEditor";
 import { documentToEditorHtml, MAX_TEMPLATE_HTML_SIZE } from "./html/htmlCodec";
-import { createBlockEditorSession, type BlockEditorSession } from "./editor/blockHtmlEditor";
+import {
+  createBlockEditorSession,
+  type BlockEditorSession,
+} from "./editor/blockHtmlEditor";
+
+interface BuilderAppProps {
+  templateMode?: boolean;
+}
 
 /** Điều phối trạng thái trình biên tập, dữ liệu API và các thao tác người dùng. */
-const BuilderApp = () => {
+const BuilderApp = ({ templateMode = false }: BuilderAppProps) => {
   const document = useBuilderStore((state) => state.document);
   const pastLength = useBuilderStore((state) => state.past.length);
   const futureLength = useBuilderStore((state) => state.future.length);
@@ -73,9 +81,12 @@ const BuilderApp = () => {
   const redo = useBuilderStore((state) => state.redo);
   const reset = useBuilderStore((state) => state.reset);
   const load = useBuilderStore((state) => state.load);
+  const rename = useBuilderStore((state) => state.rename);
   const [hydrated, setHydrated] = useState(false);
   const [preview, setPreview] = useState(false);
-  const [htmlSession, setHtmlSession] = useState<BlockEditorSession | null>(null);
+  const [htmlSession, setHtmlSession] = useState<BlockEditorSession | null>(
+    null,
+  );
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   // Trạng thái đóng/mở của thư viện thành phần để nhường chỗ cho vùng chỉnh sửa.
@@ -100,27 +111,35 @@ const BuilderApp = () => {
   // Khôi phục bản nháp cục bộ; chỉ tải trang công khai khi trình duyệt chưa có bản nháp.
   useEffect(() => {
     const existingLocalDraft = Boolean(
-      localStorage.getItem("moet-visual-builder-demo-v1"),
+      localStorage.getItem(
+        templateMode
+          ? TEMPLATE_DRAFT_STORAGE_KEY
+          : "moet-visual-builder-demo-v1",
+      ),
     );
-    void Promise.resolve(useBuilderStore.persist.rehydrate()).then(() => {
-      setHydrated(true);
-      if (!existingLocalDraft) {
-        const initialDocument = useBuilderStore.getState().document;
-        void builderApi
-          .getPublishedPage(AbortSignal.timeout(6000))
-          .then((page) => {
-            if (useBuilderStore.getState().document === initialDocument)
-              useBuilderStore.getState().load(page);
-          })
-          .catch(() => {
-            /* Giữ bố cục cục bộ khi Supabase chưa sẵn sàng. */
-          });
-      }
-    }).catch(() => {
-      setHydrated(true);
-      setMessage("Không thể khôi phục bản nháp cục bộ. Có thể nhập lại tệp JSON đã lưu.");
-    });
-  }, []);
+    void Promise.resolve(useBuilderStore.persist.rehydrate())
+      .then(() => {
+        setHydrated(true);
+        if (!existingLocalDraft && !templateMode) {
+          const initialDocument = useBuilderStore.getState().document;
+          void builderApi
+            .getPublishedPage(AbortSignal.timeout(6000))
+            .then((page) => {
+              if (useBuilderStore.getState().document === initialDocument)
+                useBuilderStore.getState().load(page);
+            })
+            .catch(() => {
+              /* Giữ bố cục cục bộ khi Supabase chưa sẵn sàng. */
+            });
+        }
+      })
+      .catch(() => {
+        setHydrated(true);
+        setMessage(
+          "Không thể khôi phục bản nháp cục bộ. Có thể nhập lại tệp JSON đã lưu.",
+        );
+      });
+  }, [templateMode]);
 
   // Tải chuyên mục sau khi store đã khôi phục để Inspector hiển thị lựa chọn nguồn tin.
   useEffect(() => {
@@ -197,6 +216,28 @@ const BuilderApp = () => {
     }
   }
 
+  /** Chỉ ghi mẫu vào kho sau khi người dùng hoàn tất chỉnh sửa trong builder. */
+  async function saveTemplate() {
+    const name = document.meta.name.trim();
+    if (!name) {
+      setMessage("Nhập tên mẫu trong Thuộc tính trang trước khi lưu.");
+      return;
+    }
+    if (!document.blocks.length) {
+      setMessage("Thêm ít nhất một khối trước khi lưu mẫu.");
+      return;
+    }
+    setActionBusy(true);
+    try {
+      await builderApi.createPageTemplate(name, document);
+      localStorage.removeItem(TEMPLATE_DRAFT_STORAGE_KEY);
+      window.location.assign("/templates");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không thể lưu mẫu.");
+      setActionBusy(false);
+    }
+  }
+
   /** Hiển thị bản xem trước của loại khối đang được kéo từ thư viện. */
   function onDragStart(event: DragStartEvent) {
     const id = String(event.active.id);
@@ -236,9 +277,13 @@ const BuilderApp = () => {
     if (!file) return;
     try {
       const isHtml = /\.html?$/i.test(file.name) || file.type === "text/html";
-      if (file.size > (isHtml ? MAX_TEMPLATE_HTML_SIZE : 3_000_000)) throw new Error(`Tệp vượt quá ${isHtml ? 10 : 3} MB.`);
+      if (file.size > (isHtml ? MAX_TEMPLATE_HTML_SIZE : 3_000_000))
+        throw new Error(`Tệp vượt quá ${isHtml ? 10 : 3} MB.`);
       const text = await file.text();
-      if (isHtml) { setHtmlSession(createBlockEditorSession(text, document)); return; }
+      if (isHtml) {
+        setHtmlSession(createBlockEditorSession(text, document));
+        return;
+      }
       const parsed = documentSchema.safeParse(JSON.parse(text));
       if (!parsed.success)
         throw new Error("Tệp JSON không đúng cấu trúc của demo.");
@@ -253,8 +298,13 @@ const BuilderApp = () => {
 
   /** Xuất template từ JSON chuẩn và mở màn sửa mã có preview trực tiếp. */
   function openHtmlEditor() {
-    try { setHtmlSession(createBlockEditorSession(documentToEditorHtml(document))); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Không thể tạo HTML."); }
+    try {
+      setHtmlSession(createBlockEditorSession(documentToEditorHtml(document)));
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Không thể tạo HTML.",
+      );
+    }
   }
 
   const previewPage = (
@@ -295,15 +345,29 @@ const BuilderApp = () => {
         </div>
         <div className="header-divider" />
         <div className="document-location">
-          <span>Giao diện trang</span>
+          <span>{templateMode ? "Mẫu mới" : "Giao diện trang"}</span>
           <span className="breadcrumb-chevron">/</span>
-          <strong>{document.meta.name}</strong>
+          {templateMode ? (
+            <input
+              className="template-name-input"
+              aria-label="Tên mẫu"
+              value={document.meta.name}
+              onChange={(event) => rename(event.target.value)}
+              maxLength={100}
+            />
+          ) : (
+            <strong>{document.meta.name}</strong>
+          )}
           <ChevronDown size={14} />
         </div>
         <div className="header-spacer" />
         <span className="save-status">
           <span />
-          {hydrated ? "Đã lưu trên trình duyệt" : "Đang tải bản nháp"}
+          {hydrated
+            ? templateMode
+              ? "Bản nháp mẫu trên trình duyệt"
+              : "Đã lưu trên trình duyệt"
+            : "Đang tải bản nháp"}
         </span>
         <button
           className="header-icon"
@@ -327,16 +391,37 @@ const BuilderApp = () => {
         <button className="outline-button" onClick={() => setPreview(true)}>
           <Eye size={16} /> Xem trước
         </button>
-        <Link className="outline-button published-link" href="/site">
-          <Eye size={16} /> Trang đã xuất bản
-        </Link>
+        {templateMode ? (
+          <button
+            className="outline-button"
+            onClick={() => window.location.assign("/templates")}
+            title="Trở lại kho mẫu"
+          >
+            <LayoutTemplate size={16} /> Kho mẫu
+          </button>
+        ) : (
+          <>
+            <Link
+              className="outline-button"
+              href="/templates"
+              title="Kho mẫu giao diện"
+            >
+              <LayoutTemplate size={16} /> Kho mẫu
+            </Link>
+            <Link className="outline-button published-link" href="/site">
+              <Eye size={16} /> Trang đã xuất bản
+            </Link>
+          </>
+        )}
         {/* <button className="outline-button" onClick={() => void saveToDatabase(false)} disabled={actionBusy}>Lưu vào DB</button> */}
         <Button
           className="primary-button"
-          onClick={() => void saveToDatabase(true)}
-          disabled={actionBusy}
+          onClick={() =>
+            void (templateMode ? saveTemplate() : saveToDatabase(true))
+          }
+          disabled={actionBusy || !hydrated}
         >
-          Xuất bản
+          {templateMode ? "Lưu mẫu" : "Xuất bản"}
         </Button>
       </header>
 
@@ -364,10 +449,15 @@ const BuilderApp = () => {
               className={paletteOpen ? "rail-active" : ""}
               role="button"
               tabIndex={0}
-              title={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+              title={
+                paletteOpen
+                  ? "Đóng thư viện thành phần"
+                  : "Mở thư viện thành phần"
+              }
               onClick={() => setPaletteOpen((open) => !open)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") setPaletteOpen((open) => !open);
+                if (event.key === "Enter" || event.key === " ")
+                  setPaletteOpen((open) => !open);
               }}
             >
               <LayoutGrid size={19} />
@@ -383,7 +473,10 @@ const BuilderApp = () => {
               <CircleHelp size={19} />
             </span>
           </nav>
-          <aside className={`palette-panel ${paletteOpen ? "" : "collapsed"}`} aria-hidden={!paletteOpen}>
+          <aside
+            className={`palette-panel ${paletteOpen ? "" : "collapsed"}`}
+            aria-hidden={!paletteOpen}
+          >
             <div className="panel-header">
               <div>
                 <span className="panel-kicker">THƯ VIỆN</span>
@@ -403,8 +496,19 @@ const BuilderApp = () => {
                 Kéo thả hoặc nhấn <strong>+</strong> để thêm vào trang.
               </p>
               {/* Nhóm theo danh mục giống WordPress Gutenberg */}
-              {(["Trang chủ", "Tin tức", "Đa phương tiện", "Tiện ích", "Điều hướng", "Cơ bản"] as const).map((cat) => {
-                const kinds = blockKinds.filter((k) => blockCatalog[k].category === cat);
+              {(
+                [
+                  "Trang chủ",
+                  "Tin tức",
+                  "Đa phương tiện",
+                  "Tiện ích",
+                  "Điều hướng",
+                  "Cơ bản",
+                ] as const
+              ).map((cat) => {
+                const kinds = blockKinds.filter(
+                  (k) => blockCatalog[k].category === cat,
+                );
                 if (!kinds.length) return null;
                 return (
                   <div key={cat} className="palette-category">
@@ -423,24 +527,36 @@ const BuilderApp = () => {
                 <span>✦</span>
                 <strong>Mẹo nhỏ</strong>
                 <p>
-                  Kéo trực tiếp vào vị trí bất kỳ trên canvas để chèn khối vào đúng chỗ.
+                  Kéo trực tiếp vào vị trí bất kỳ trên canvas để chèn khối vào
+                  đúng chỗ.
                 </p>
               </div>
             </div>
           </aside>
-
 
           <section className="main-workspace" aria-label="Vùng chỉnh sửa trang">
             <div className="workspace-toolbar">
               <div className="toolbar-title">
                 <button
                   className="toolbar-more"
-                  title={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
-                  aria-label={paletteOpen ? "Đóng thư viện thành phần" : "Mở thư viện thành phần"}
+                  title={
+                    paletteOpen
+                      ? "Đóng thư viện thành phần"
+                      : "Mở thư viện thành phần"
+                  }
+                  aria-label={
+                    paletteOpen
+                      ? "Đóng thư viện thành phần"
+                      : "Mở thư viện thành phần"
+                  }
                   aria-expanded={paletteOpen}
                   onClick={() => setPaletteOpen((open) => !open)}
                 >
-                  {paletteOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                  {paletteOpen ? (
+                    <PanelLeftClose size={16} />
+                  ) : (
+                    <PanelLeftOpen size={16} />
+                  )}
                 </button>
                 <span className="toolbar-dot" />
                 <strong>Trình dựng trang</strong>
@@ -455,7 +571,11 @@ const BuilderApp = () => {
                 />
                 <span className="toolbar-label">Font chung</span>
                 <div style={{ width: 140 }}>
-                  <FontPicker id="toolbar-theme-font" value={themeFont} onChange={setThemeFont} />
+                  <FontPicker
+                    id="toolbar-theme-font"
+                    value={themeFont}
+                    onChange={setThemeFont}
+                  />
                 </div>
                 <span className="toolbar-label">Thiết bị</span>
                 <div className="device-switch">
@@ -483,7 +603,11 @@ const BuilderApp = () => {
                   aria-label="Thêm tùy chọn"
                   onClick={() => {
                     reset();
-                    setMessage("Đã khôi phục bố cục mẫu. Có thể hoàn tác.");
+                    setMessage(
+                      templateMode
+                        ? "Đã xóa bố cục mẫu. Có thể hoàn tác."
+                        : "Đã khôi phục bố cục mẫu. Có thể hoàn tác.",
+                    );
                   }}
                 >
                   <RotateCcw size={16} />
@@ -493,11 +617,16 @@ const BuilderApp = () => {
             <div className="canvas-scroll">
               <div
                 className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}
-                style={device === "mobile" ? undefined : { width: `min(100%, ${pageWidth}px)` }}
+                style={
+                  device === "mobile"
+                    ? undefined
+                    : { width: `min(100%, ${pageWidth}px)` }
+                }
               >
                 <div className="canvas-frame-label">
                   <span>
-                    <span className="frame-live-dot" /> Trang chủ
+                    <span className="frame-live-dot" />{" "}
+                    {templateMode ? "Mẫu mới" : "Trang chủ"}
                   </span>
                   <span>
                     {device === "mobile" ? "375 px" : `${pageWidth} px`}{" "}
@@ -515,6 +644,7 @@ const BuilderApp = () => {
             </div>
           </section>
           <Inspector
+            templateMode={templateMode}
             mobileOpen={mobileInspectorOpen}
             onClose={() => setMobileInspectorOpen(false)}
             categories={categories}
@@ -529,7 +659,9 @@ const BuilderApp = () => {
                   return <Icon size={18} />;
                 })()}
               </span>
-              <strong>{blockCatalog[draggingKind]?.label || draggingKind}</strong>
+              <strong>
+                {blockCatalog[draggingKind]?.label || draggingKind}
+              </strong>
             </div>
           )}
         </DragOverlay>
@@ -557,15 +689,20 @@ const BuilderApp = () => {
           <Download size={15} /> Xuất JSON
         </button>
         <span />
-        <button onClick={openHtmlEditor}><Code2 size={15} /> HTML Editor</button>
+        <button onClick={openHtmlEditor}>
+          <Code2 size={15} /> HTML Editor
+        </button>
         <span />
         <button onClick={reset}>
-          <RotateCcw size={15} /> Khôi phục mẫu
+          <RotateCcw size={15} />{" "}
+          {templateMode ? "Xóa bố cục" : "Khôi phục mẫu"}
         </button>
         <div className="bottom-spacer" />
-        <button onClick={() => void loadFromDatabase()} disabled={actionBusy}>
-          Tải bản nháp từ DB
-        </button>
+        {!templateMode && (
+          <button onClick={() => void loadFromDatabase()} disabled={actionBusy}>
+            Tải bản nháp từ DB
+          </button>
+        )}
       </div>
       {message && (
         <div role="status" className="toast">
@@ -577,9 +714,20 @@ const BuilderApp = () => {
         </div>
       )}
 
-      {htmlSession !== null && <HtmlEditor initialSession={htmlSession} initialBlockId={useBuilderStore.getState().selectedId} onClose={() => setHtmlSession(null)} onApply={(nextDocument) => {
-        load(nextDocument); setHtmlSession(null); setMessage("Đã chuyển HTML/CSS các component thành JSON v2 và cập nhật trình dựng.");
-      }} />}
+      {htmlSession !== null && (
+        <HtmlEditor
+          initialSession={htmlSession}
+          initialBlockId={useBuilderStore.getState().selectedId}
+          onClose={() => setHtmlSession(null)}
+          onApply={(nextDocument) => {
+            load(nextDocument);
+            setHtmlSession(null);
+            setMessage(
+              "Đã chuyển HTML/CSS các component thành JSON v2 và cập nhật trình dựng.",
+            );
+          }}
+        />
+      )}
       {preview && (
         <div
           className="preview-modal"
@@ -595,7 +743,10 @@ const BuilderApp = () => {
               <strong>Xem trước trang</strong>
               <span className="preview-badge">BẢN NHÁP</span>
             </div>
-            <div className="toolbar-actions" style={{ marginLeft: "auto", marginRight: "16px" }}>
+            <div
+              className="toolbar-actions"
+              style={{ marginLeft: "auto", marginRight: "16px" }}
+            >
               <span className="toolbar-label">Thiết bị</span>
               <div className="device-switch">
                 <button
@@ -626,7 +777,11 @@ const BuilderApp = () => {
           <div className="preview-scroll">
             <div
               className={`canvas-frame ${device === "mobile" ? "mobile-frame" : ""}`}
-              style={device === "mobile" ? undefined : { width: `min(100%, ${pageWidth}px)` }}
+              style={
+                device === "mobile"
+                  ? undefined
+                  : { width: `min(100%, ${pageWidth}px)` }
+              }
             >
               {previewPage}
             </div>

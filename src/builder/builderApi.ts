@@ -1,5 +1,5 @@
 import { documentSchema, getBlockSource, type BuilderBlock, type BuilderDocument } from "./domain/model";
-import type { Article, Category, ContentEntry, ContentKind } from "@/lib/supabase";
+import type { Article, Category, ContentEntry, ContentKind, PageTemplateSummary } from "@/lib/supabase";
 
 export type BlockData = { articles?: Article[]; entries?: ContentEntry[] };
 
@@ -90,4 +90,31 @@ export async function publishDraft(): Promise<void> {
   await responseData(await fetch("/api/page/publish", {
     method: "POST",
   }));
+}
+
+/** Đọc danh sách mẫu mà không tải JSON của từng bố cục. */
+export async function getPageTemplates(): Promise<PageTemplateSummary[]> {
+  const body = await responseData<{ templates: PageTemplateSummary[] }>(await fetch("/api/templates", { cache: "no-store" }));
+  return body.templates;
+}
+
+/** Lưu bản sao của bố cục hiện tại vào kho mẫu. */
+export async function createPageTemplate(name: string, document: BuilderDocument): Promise<PageTemplateSummary> {
+  const body = await responseData<{ template: PageTemplateSummary }>(await fetch("/api/templates", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name, document }),
+  }));
+  return body.template;
+}
+
+/** Chỉ tải JSON khi người dùng chọn áp dụng mẫu. */
+export async function getPageTemplate(id: string): Promise<BuilderDocument> {
+  const body = await responseData<{ document: unknown }>(await fetch(`/api/templates?id=${encodeURIComponent(id)}`, { cache: "no-store" }));
+  return parseDocument(body.document, "Mẫu trong Supabase không hợp lệ.");
+}
+
+/** Xóa một mẫu đã lưu khỏi kho. */
+export async function deletePageTemplate(id: string): Promise<void> {
+  await responseData(await fetch(`/api/templates?id=${encodeURIComponent(id)}`, { method: "DELETE" }));
 }

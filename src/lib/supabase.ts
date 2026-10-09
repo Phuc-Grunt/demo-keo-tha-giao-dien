@@ -3,6 +3,20 @@ import { BuilderDocument, documentSchema } from "@/builder/domain/model";
 import { z } from "zod";
 
 export type Category = { id: string; slug: string; name: string };
+export type PageTemplateSummary = {
+  id: string;
+  name: string;
+  block_count: number;
+  created_at: string;
+  updated_at: string;
+};
+const pageTemplateSummarySchema: z.ZodType<PageTemplateSummary> = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  block_count: z.number().int(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
 export type Article = {
   id: string;
   slug: string;
@@ -106,6 +120,54 @@ export async function publishDraft(): Promise<void> {
     .update({ published_content: draft, published_at: new Date().toISOString() })
     .eq("slug", "home");
   if (error) throw new Error(error.message);
+}
+
+/** Liệt kê thông tin gọn của các mẫu, không tải toàn bộ JSON bố cục. */
+export async function getPageTemplates(): Promise<PageTemplateSummary[]> {
+  const db = adminClient();
+  if (!db) throw new Error("Chưa cấu hình SUPABASE_SECRET_KEY.");
+  const { data, error } = await db.from("page_templates")
+    .select("id,name,block_count,created_at,updated_at")
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return z.array(pageTemplateSummarySchema).parse(data ?? []);
+}
+
+/** Lấy một mẫu và kiểm tra JSON trước khi đưa vào trình dựng. */
+export async function getPageTemplate(id: string): Promise<BuilderDocument | null> {
+  const db = adminClient();
+  if (!db) throw new Error("Chưa cấu hình SUPABASE_SECRET_KEY.");
+  const { data, error } = await db.from("page_templates")
+    .select("content")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? validatedDocument(data.content) : null;
+}
+
+/** Tạo bản sao mới, không cập nhật mẫu đã có hay trang đang xuất bản. */
+export async function createPageTemplate(name: string, document: BuilderDocument): Promise<PageTemplateSummary> {
+  const db = adminClient();
+  if (!db) throw new Error("Chưa cấu hình SUPABASE_SECRET_KEY.");
+  const { data, error } = await db.from("page_templates")
+    .insert({ name, content: document, block_count: document.blocks.length })
+    .select("id,name,block_count,created_at,updated_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return pageTemplateSummarySchema.parse(data);
+}
+
+/** Xóa đúng một mẫu theo ID; bố cục đang sửa và trang công khai không bị ảnh hưởng. */
+export async function deletePageTemplate(id: string): Promise<boolean> {
+  const db = adminClient();
+  if (!db) throw new Error("Chưa cấu hình SUPABASE_SECRET_KEY.");
+  const { data, error } = await db.from("page_templates")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data);
 }
 
 export async function getCategories(): Promise<Category[]> {
