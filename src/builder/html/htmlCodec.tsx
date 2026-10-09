@@ -6,7 +6,7 @@ import { z } from "zod";
 import HtmlTemplate from "./HtmlTemplate";
 import { blockSchema, documentSchema, normalizedDocumentSchema, flattenBlocks, getPageWidth, getBlockSource, textTargets, type BuilderBlock, type BuilderDocument, type BuilderItem, type BlockDataConfig, type PartConfig, type PartName, type TextStyleTarget } from "../domain/model";
 import { blockAppearanceCss, partDeclarations, textDeclarations, templateSelectors, type CssDeclarations } from "../renderer/appearance";
-import { readPresentation, utilityCss } from "./htmlStyle";
+import { readPresentation, utilityCss, validateStyleDeclarations } from "./htmlStyle";
 import { templateStyles } from "./htmlTemplateStyles";
 import { hiddenTemplateAttributes, restoreTemplateContract } from "./htmlTemplateContract";
 import { expandReadableMarkers, formatReadableBlocks, prepareReadableHtml, INLINE_HTML_FORMAT, READABLE_HTML_FORMAT } from "./htmlReadableFormat";
@@ -108,6 +108,8 @@ function decorateBlock(root: HTMLElement, block: BuilderBlock): void {
   root.setAttribute("data-builder-required-fields", JSON.stringify(required));
   const heroImage = block.kind === "hero" ? ownElements(root, ".hero-art img")[0] : undefined;
   if (heroImage) { heroImage.setAttribute("data-builder-image", "imageUrl"); markPresentation(heroImage, {}); }
+  const heroIcon = block.kind === "hero" ? ownElements(root, ".hero-illustration .bi")[0] : undefined;
+  if (heroIcon) heroIcon.setAttribute("data-builder-icon", "hero");
   for (const slot of block.slots ?? []) {
     const element = ownElements(root, "[data-builder-slot-id]").find((candidate) => candidate.getAttribute("data-builder-slot-id") === slot.id);
     if (element) markPresentation(element, partDeclarations(slot));
@@ -139,7 +141,7 @@ function inlineShape(element: HTMLElement): string {
   removeText(clone); return stylesheetHash(clone.innerHTML);
 }
 function isPresentationElement(element: HTMLElement): boolean {
-  return element.hasAttribute("data-builder-part") || element.hasAttribute("data-builder-slot-id") || element.hasAttribute("data-builder-page") || element.hasAttribute("data-builder-field") || element.hasAttribute("data-builder-image");
+  return element.hasAttribute("data-builder-part") || element.hasAttribute("data-builder-slot-id") || element.hasAttribute("data-builder-page") || element.hasAttribute("data-builder-field") || element.hasAttribute("data-builder-image") || element.hasAttribute("data-builder-icon");
 }
 /** Đánh dấu phần nội dung/class/style có contract và phần template tĩnh. */
 function markStaticContract(page: HTMLElement): void {
@@ -186,6 +188,7 @@ export function documentToEditorHtml(input: BuilderDocument): string {
     const base = output.createElement("base"); base.href = `${window.location.origin}/`; output.head.append(base);
     const viewport = output.createElement("meta"); viewport.name = "viewport"; viewport.content = "width=device-width, initial-scale=1"; output.head.append(viewport);
     for (const link of Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))) if (link.href.startsWith("https://fonts.googleapis.com/")) output.head.append(link.cloneNode(true));
+    const icons = output.createElement("link"); icons.rel = "stylesheet"; icons.href = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"; output.head.append(icons);
     output.body.append(page, metadataElement("data-builder-document", normalized));
     const stylesheet = output.createElement("style"); stylesheet.setAttribute("data-builder-template-css", stylesheetHash(css)); stylesheet.textContent = css; output.body.append(stylesheet);
     const responsive = output.createElement("style");
@@ -322,6 +325,20 @@ function readBlock(root: HTMLElement, seeds?: ReadonlyMap<string, BuilderBlock>)
     if (result.parts && !Object.keys(result.parts).length) result.parts = undefined;
     result.content.items = readItems(root, seed);
     if (result.kind === "hero") {
+      const icons = ownElements(root, '[data-builder-icon="hero"]');
+      if (icons.length > 1) throw new Error("Icon hero bị trùng.");
+      const icon = icons[0];
+      if (icon) {
+        if (icon.tagName !== "I" || !icon.classList.contains("bi") || icon.classList.length !== 2 || icon.textContent?.trim()) throw new Error("Icon hero phải dùng thẻ i với class bi và bi-[tên icon].");
+        const name = Array.from(icon.classList).find((token) => token.startsWith("bi-"))?.slice(3);
+        if (!name) throw new Error("Icon hero thiếu tên Bootstrap Icon.");
+        validateStyleDeclarations(icon);
+        const properties = Array.from(icon.style);
+        if (properties.some((property) => property !== "font-size" && property !== "color")) throw new Error("Icon hero chỉ hỗ trợ font-size và color.");
+        const size = icon.style.fontSize.trim();
+        if (size && !/^\d+(?:\.\d+)?px$/.test(size)) throw new Error("font-size của icon phải dùng px.");
+        result.content.icon = { name, fontSize: size ? Number.parseFloat(size) : undefined, color: icon.style.color.trim() || undefined };
+      }
       const image = ownElements(root, ".hero-art img")[0];
       if (image) {
         const presentation = readPresentation(image);
@@ -469,7 +486,7 @@ export function previewHtml(html: string): string {
   for (const element of Array.from(parsed.querySelectorAll("*"))) for (const attribute of Array.from(element.attributes)) if (/^on/i.test(attribute.name) || (["href", "src", "xlink:href"].includes(attribute.name) && /^\s*(javascript:|vbscript:|data:text\/html)/i.test(attribute.value))) element.removeAttribute(attribute.name);
   const base = parsed.createElement("base"); base.href = `${window.location.origin}/`; parsed.head.prepend(base);
   const policy = parsed.createElement("meta"); policy.httpEquiv = "Content-Security-Policy";
-  policy.content = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; img-src https: http: data: blob:; font-src https://fonts.gstatic.com data:; connect-src 'none'; form-action 'none';"; parsed.head.prepend(policy);
+  policy.content = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src https: http: data: blob:; font-src https://fonts.gstatic.com https://cdn.jsdelivr.net data:; connect-src 'none'; form-action 'none';"; parsed.head.prepend(policy);
   const utilities = parsed.createElement("style"); utilities.textContent = utilityCss(parsed); parsed.head.append(utilities);
   return `<!DOCTYPE html>\n${parsed.documentElement.outerHTML}`;
 }

@@ -15,7 +15,7 @@ const blockSettings = new Set([
 /** Khôi phục nền theo component chuẩn, đồng thời từ chối thay đổi chưa thể biểu diễn trong JSON. */
 function restoreNode(element: Element, original: Element): void {
   if (element.tagName !== original.tagName) throw new Error("Cấu trúc thẻ đã thay đổi. Dùng builder để thêm hoặc đổi loại khối.");
-  const presentation = ["data-builder-part", "data-builder-field", "data-builder-slot-id", "data-builder-image", "data-builder-page"].some((name) => original.hasAttribute(name));
+  const presentation = ["data-builder-part", "data-builder-field", "data-builder-slot-id", "data-builder-image", "data-builder-icon", "data-builder-page"].some((name) => original.hasAttribute(name));
   const itemField = original.getAttribute("data-builder-item-field");
   const names = new Set([...Array.from(element.attributes), ...Array.from(original.attributes)].map((attribute) => attribute.name));
   for (const name of names) {

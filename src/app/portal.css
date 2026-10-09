@@ -277,6 +277,10 @@
   right: 91px;
   transform: rotate(-12deg);
 }
+.hero-illustration .bi {
+  font-size: 66px;
+  line-height: 1;
+}
 
 .hero-art-label {
   position: absolute;
