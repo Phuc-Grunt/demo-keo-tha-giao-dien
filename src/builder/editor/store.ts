@@ -24,6 +24,12 @@ interface BuilderState {
 }
 interface NodeLocation { blocks: BuilderBlock[]; index: number; block: BuilderBlock }
 const savedStateSchema = z.object({ document: documentSchema });
+export const TEMPLATE_DRAFT_STORAGE_KEY = "moet-template-builder-draft-v1";
+const PAGE_DRAFT_STORAGE_KEY = "moet-visual-builder-demo-v1";
+const editingTemplate = typeof window !== "undefined" && window.location.pathname === "/templates/new";
+const initialDocument: BuilderDocument = editingTemplate
+  ? { ...structuredClone(starterDocument), meta: { name: "Mẫu mới" }, blocks: [] }
+  : structuredClone(starterDocument);
 
 /** Áp dụng cập nhật vào một khối ở bất kỳ slot nào. */
 function mapBlock(blocks: BuilderBlock[], id: string, transform: (block: BuilderBlock) => BuilderBlock): BuilderBlock[] {
@@ -72,7 +78,7 @@ function withSource(block: BuilderBlock, source: BlockSourceConfig): BuilderBloc
 
 /** Store lưu duy nhất JSON v2; dữ liệu cũ được chuyển khi khôi phục localStorage. */
 export const useBuilderStore = create<BuilderState>()(persist((set, get) => ({
-  document: structuredClone(starterDocument), selectedId: "demo-hero", past: [], future: [],
+  document: initialDocument, selectedId: editingTemplate ? null : "demo-hero", past: [], future: [],
   select: (selectedId) => set({ selectedId }),
   rename: (name) => set((state) => commit(state, { ...state.document, meta: { ...state.document.meta, name } })),
   setPageWidth: (maxWidth) => set((state) => commit(state, { ...state.document, page: { ...state.document.page, layout: { ...state.document.page.layout, maxWidth } } })),
@@ -134,7 +140,7 @@ export const useBuilderStore = create<BuilderState>()(persist((set, get) => ({
   undo: () => set((state) => state.past.length ? { document: state.past[state.past.length - 1], past: state.past.slice(0, -1), future: [state.document, ...state.future], selectedId: null } : state),
   redo: () => set((state) => state.future.length ? { document: state.future[0], past: [...state.past.slice(-29), state.document], future: state.future.slice(1), selectedId: null } : state),
   load: (document) => set((state) => commit(state, documentSchema.parse(document), null)),
-  reset: () => set((state) => commit(state, structuredClone(starterDocument), "demo-hero")),
+  reset: () => set((state) => commit(state, structuredClone(initialDocument), editingTemplate ? null : "demo-hero")),
   addToSlot: (parentId, colIdx, kind) => set((state) => {
     const block = makeBlock(kind);
     const blocks = mapBlock(state.document.blocks, parentId, (parent) => ({ ...parent, slots: parent.slots?.map((slot, index) => index === colIdx ? { ...slot, blocks: [...slot.blocks, block] } : slot) }));
@@ -156,7 +162,8 @@ export const useBuilderStore = create<BuilderState>()(persist((set, get) => ({
     return commit(state, { ...state.document, blocks });
   }),
 }), {
-  name: "moet-visual-builder-demo-v1", version: 2, storage: createJSONStorage(() => localStorage), skipHydration: true,
+  name: editingTemplate ? TEMPLATE_DRAFT_STORAGE_KEY : PAGE_DRAFT_STORAGE_KEY,
+  version: 2, storage: createJSONStorage(() => localStorage), skipHydration: true,
   partialize: (state) => ({ document: state.document }),
   migrate: (saved) => savedStateSchema.parse(saved),
   merge: (saved, current) => { const parsed = savedStateSchema.safeParse(saved); return parsed.success ? { ...current, document: parsed.data.document } : current; },

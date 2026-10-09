@@ -1,6 +1,6 @@
 # Demo kéo thả giao diện + Supabase
 
-Next.js, TypeScript và React. Trang biên tập ở `/`; trang đã xuất bản ở `/site`.
+Next.js, TypeScript và React. Trang biên tập ở `/`; kho mẫu ở `/templates`; trang đã xuất bản ở `/site`.
 
 ## Cấu trúc builder
 
@@ -22,6 +22,7 @@ Nút **HTML Editor** mở màn sửa theo từng component: chọn block, chỉn
 
 1. Trong Supabase project `emgahpzaacjxpzvodvnh`, mở **SQL Editor** và chạy toàn bộ file [`supabase/migrations/202609290001_demo.sql`](supabase/migrations/202609290001_demo.sql). Script tạo `pages`, `categories`, `articles` và dữ liệu giả lập. Chạy lại không chèn trùng bản ghi mẫu.
    Sau đó chạy [`supabase/migrations/202609290002_dynamic_content.sql`](supabase/migrations/202609290002_dynamic_content.sql) để thêm URL ảnh và bảng `content_entries` cho Banner, Số liệu, Liên kết, Đoạn văn và Thư viện ảnh.
+   Chạy tiếp [`supabase/migrations/202610070001_page_templates.sql`](supabase/migrations/202610070001_page_templates.sql) để tạo bảng kho mẫu `page_templates`.
 2. Mở **Project Settings → API Keys**, lấy **secret key** (`sb_secret_...`). Thêm dòng `SUPABASE_SECRET_KEY=...` vào `.env.local` trên máy này. Giữ key này trong file local; không đưa vào mã client hoặc commit Git. URL và publishable key đã được cấu hình trong `.env.local`.
 3. Chạy `yarn install` rồi `yarn dev`. Nếu server đang chạy khi sửa `.env.local`, khởi động lại server.
 4. Mở `http://localhost:3000/`. Nhấn **Tải bản nháp từ DB** để lấy bố cục từ Supabase.
@@ -30,6 +31,8 @@ Nút **HTML Editor** mở màn sửa theo từng component: chọn block, chỉn
 ## Dữ liệu và API
 
 - `pages.draft_content` là bản đang sửa; `pages.published_content` là bản công khai. Lưu bản nháp không đổi trang `/site` cho tới khi xuất bản.
+- Ở `/templates`, **Tạo mẫu mới** mở builder tại `/templates/new` với bố cục trống và bản nháp riêng. Chỉnh sửa, đặt tên rồi nhấn **Lưu mẫu** để thêm một bản ghi `page_templates`; quay về kho trước khi lưu vẫn giữ bản nháp mẫu để tiếp tục. **Sử dụng mẫu** nạp một bản sao vào bản nháp trang chủ và giữ nguyên mẫu gốc; trang `/site` chỉ đổi khi bạn xuất bản.
+- `GET /api/templates` liệt kê mẫu; `GET /api/templates?id=...` tải một mẫu; `POST /api/templates` tạo mẫu mới; `DELETE /api/templates?id=...` xóa mẫu.
 - `GET /api/page` đọc bản đã xuất bản. `GET /api/page?draft=1`, `PUT /api/page` và `POST /api/page/publish` tải, lưu và xuất bản mà không cần mã trong bản demo.
 - `GET /api/categories` và `GET /api/articles?category=tin-tuc&mode=latest&limit=3` trả dữ liệu từ Supabase. `mode=hot` lấy các bài đánh dấu nổi bật, sắp xếp theo lượt xem.
 - `GET /api/content?kind=gallery&limit=4` trả nội dung cho Banner (`hero`), Số liệu (`stat`), Liên kết (`link`), Đoạn văn (`text`) và Thư viện ảnh (`gallery`). URL ảnh nằm trong `articles.image_url` hoặc `content_entries.image_url`; demo trỏ tới các SVG trong `public/demo-images`. Có thể thay bằng URL công khai của Supabase Storage.
