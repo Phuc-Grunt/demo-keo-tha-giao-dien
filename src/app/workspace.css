@@ -1091,8 +1091,8 @@
     height: 70px;
     right: 0;
   }
-  .hero-illustration svg {
-    width: 35px;
+  .hero-illustration .bi {
+    font-size: 35px;
   }
   .hero-art-label {
     display: none;

@@ -74,7 +74,7 @@ const HtmlEditor = ({ initialSession, initialBlockId, onApply, onClose }: HtmlEd
         <button className="outline-button" onClick={onClose}><X size={15} /> Đóng</button>
       </div>
     </header>
-    <div className="html-editor-help">Xuất HTML block chỉ lưu các block và style riêng. Sau khi sửa tệp, nhập lại vào bố cục này rồi nhấn Áp dụng. Dùng Xuất JSON để sao lưu đầy đủ hoặc chuyển bố cục sang nơi khác.</div>
+    <div className="html-editor-help">Xuất HTML block chỉ lưu các block và style riêng. Trang hiển thị các block cần nạp Bootstrap Icons để hiện icon. Sau khi sửa tệp, nhập lại vào bố cục này rồi nhấn Áp dụng. Dùng Xuất JSON để sao lưu đầy đủ hoặc chuyển bố cục sang nơi khác.</div>
     <div className="html-editor-panes">
       <BlockList entries={session.entries} sources={sources} initialSources={session.sources} selectedId={selectedId} onSelect={setSelectedId} />
       <BlockCodePane title={selected?.label ?? ""} source={selectedId ? sources[selectedId] : undefined} tab={tab} selectors={selectedId ? blockEditorSelectors(session, selectedId) : []} onTabChange={setTab} onChange={updateSource} />

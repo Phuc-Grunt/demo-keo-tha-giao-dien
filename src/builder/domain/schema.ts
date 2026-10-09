@@ -207,12 +207,19 @@ const itemSchema = z
     "Một mục phải có title hoặc value và label.",
   );
 export type BuilderItem = z.infer<typeof itemSchema>;
+const iconSchema = z.object({
+  name: z.string().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Tên Bootstrap Icon không hợp lệ."),
+  fontSize: z.number().min(8).max(256).optional(),
+  color: colorSchema.optional(),
+}).strict();
+export type BuilderIcon = z.infer<typeof iconSchema>;
 const contentSchema = z
   .object({
     eyebrow: z.string().max(100),
     title: z.string().max(200),
     description: z.string().max(1000),
     imageUrl: imageSchema.optional(),
+    icon: iconSchema.optional(),
     items: z.array(itemSchema).max(12),
   })
   .strict();

@@ -12,6 +12,7 @@ const markerAliases: Record<string, string> = {
   "data-builder-item-field": "data-item-field",
   "data-builder-slot-id": "data-slot",
   "data-builder-image": "data-image",
+  "data-builder-icon": "data-icon",
   "data-builder-version": "data-version",
   "data-builder-name": "data-name",
   "data-builder-primary-color": "data-theme-color",
