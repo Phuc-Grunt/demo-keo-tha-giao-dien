@@ -1,8 +1,8 @@
-import { BookOpen } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle } from "./types";
 import SectionHeading from "./SectionHeading";
 import BlockImage from "./BlockImage";
+import BlockIcon from "./BlockIcon";
 
 /** Hiển thị danh sách tin tức theo dạng lưới. */
 const NewsBlock = ({ block, articles }: BlockViewProps) => {
@@ -29,7 +29,7 @@ const NewsBlock = ({ block, articles }: BlockViewProps) => {
                   fallback={
                     <>
                       <div className="news-image-pattern" />
-                      <BookOpen size={30} strokeWidth={1.4} />
+                      <BlockIcon block={block} iconKey={`image-${index}`} defaultName="book" />
                     </>
                   }
                 />

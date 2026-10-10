@@ -220,6 +220,7 @@ const contentSchema = z
     description: z.string().max(1000),
     imageUrl: imageSchema.optional(),
     icon: iconSchema.optional(),
+    icons: z.record(z.string().max(80), iconSchema).optional(),
     items: z.array(itemSchema).max(12),
   })
   .strict();

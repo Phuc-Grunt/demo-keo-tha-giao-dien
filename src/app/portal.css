@@ -210,6 +210,7 @@
   margin-top: 20px;
   text-decoration: none;
 }
+.hero-cta .bi { font-size: 15px; line-height: 1; }
 
 .hero-art {
   position: absolute;
@@ -338,6 +339,7 @@
   font-weight: 700;
   white-space: nowrap;
 }
+.view-all .bi { font-size: 14px; line-height: 1; }
 
 .news-grid {
   display: grid;
@@ -384,8 +386,10 @@
   right: -30px;
 }
 
-.news-image svg {
+.news-image .bi {
   position: relative;
+  font-size: 30px;
+  line-height: 1;
   filter: drop-shadow(0 2px 2px #22507533);
 }
 
@@ -592,16 +596,19 @@
   display: grid;
   place-items: center;
 }
+.link-icon .bi { font-size: 19px; line-height: 1; }
 
 .link-card strong {
   font-size: 10px;
   color: #34516e;
 }
 
-.link-card>svg {
+.link-card>.bi {
   position: absolute;
   top: 12px;
   right: 11px;
+  font-size: 16px;
+  line-height: 1;
   color: #a2b9cf;
 }
 

@@ -1,5 +1,5 @@
-import { ArrowRight } from "lucide-react";
 import type { BuilderBlock } from "../../domain/model";
+import BlockIcon from "./BlockIcon";
 
 interface SectionHeadingProps {
   block: BuilderBlock;
@@ -26,7 +26,7 @@ const SectionHeading = ({
       </div>
       {showViewAll && (
         <span className="view-all">
-          Xem tất cả <ArrowRight size={14} />
+          Xem tất cả <BlockIcon block={block} iconKey="view-all" defaultName="arrow-right" />
         </span>
       )}
     </div>

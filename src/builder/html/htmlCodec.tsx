@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { z } from "zod";
 import HtmlTemplate from "./HtmlTemplate";
-import { blockSchema, documentSchema, normalizedDocumentSchema, flattenBlocks, getPageWidth, getBlockSource, textTargets, type BuilderBlock, type BuilderDocument, type BuilderItem, type BlockDataConfig, type PartConfig, type PartName, type TextStyleTarget } from "../domain/model";
+import { blockSchema, documentSchema, normalizedDocumentSchema, flattenBlocks, getPageWidth, getBlockSource, textTargets, type BuilderBlock, type BuilderDocument, type BuilderIcon, type BuilderItem, type BlockDataConfig, type PartConfig, type PartName, type TextStyleTarget } from "../domain/model";
 import { blockAppearanceCss, partDeclarations, textDeclarations, templateSelectors, type CssDeclarations } from "../renderer/appearance";
 import { readPresentation, utilityCss, validateStyleDeclarations } from "./htmlStyle";
 import { templateStyles } from "./htmlTemplateStyles";
@@ -108,8 +108,6 @@ function decorateBlock(root: HTMLElement, block: BuilderBlock): void {
   root.setAttribute("data-builder-required-fields", JSON.stringify(required));
   const heroImage = block.kind === "hero" ? ownElements(root, ".hero-art img")[0] : undefined;
   if (heroImage) { heroImage.setAttribute("data-builder-image", "imageUrl"); markPresentation(heroImage, {}); }
-  const heroIcon = block.kind === "hero" ? ownElements(root, ".hero-illustration .bi")[0] : undefined;
-  if (heroIcon) heroIcon.setAttribute("data-builder-icon", "hero");
   for (const slot of block.slots ?? []) {
     const element = ownElements(root, "[data-builder-slot-id]").find((candidate) => candidate.getAttribute("data-builder-slot-id") === slot.id);
     if (element) markPresentation(element, partDeclarations(slot));
@@ -271,6 +269,18 @@ function readItems(root: HTMLElement, seed: BuilderBlock): BuilderItem[] {
   }
   return [...changed.values(), ...seed.content.items.filter((item) => !changed.has(item.id) && !originalVisible.includes(item.id))];
 }
+/** Đọc tên và style được phép của một Bootstrap Icon từ HTML người dùng sửa. */
+function readIcon(element: HTMLElement): BuilderIcon {
+  if (element.tagName !== "I" || !element.classList.contains("bi") || element.classList.length !== 2 || element.textContent?.trim()) throw new Error("Icon phải dùng thẻ i với class bi và bi-[tên icon].");
+  const name = Array.from(element.classList).find((token) => token.startsWith("bi-"))?.slice(3);
+  if (!name) throw new Error("Icon thiếu tên Bootstrap Icon.");
+  validateStyleDeclarations(element);
+  const properties = Array.from(element.style);
+  if (properties.some((property) => property !== "font-size" && property !== "color")) throw new Error("Icon chỉ hỗ trợ font-size và color.");
+  const size = element.style.fontSize.trim();
+  if (size && !/^\d+(?:\.\d+)?px$/.test(size)) throw new Error("font-size của icon phải dùng px.");
+  return { name, fontSize: size ? Number.parseFloat(size) : undefined, color: element.style.color.trim() || undefined };
+}
 /** Parse một block và toàn bộ slot, giữ các field không có phần tử hiển thị trong metadata. */
 function readBlock(root: HTMLElement, seeds?: ReadonlyMap<string, BuilderBlock>): BuilderBlock {
   const id = root.getAttribute("data-builder-block-id") ?? "";
@@ -324,21 +334,16 @@ function readBlock(root: HTMLElement, seeds?: ReadonlyMap<string, BuilderBlock>)
     if (result.textStyles && !Object.keys(result.textStyles).length) result.textStyles = undefined;
     if (result.parts && !Object.keys(result.parts).length) result.parts = undefined;
     result.content.items = readItems(root, seed);
+    const iconKeys = new Set<string>();
+    for (const element of ownElements(root, "[data-builder-icon]")) {
+      const key = element.getAttribute("data-builder-icon") ?? "";
+      if (!key || iconKeys.has(key)) throw new Error("Icon trong block thiếu khóa hoặc bị trùng.");
+      iconKeys.add(key);
+      const icon = readIcon(element);
+      if (result.kind === "hero" && key === "hero") result.content.icon = icon;
+      else result.content.icons = { ...result.content.icons, [key]: icon };
+    }
     if (result.kind === "hero") {
-      const icons = ownElements(root, '[data-builder-icon="hero"]');
-      if (icons.length > 1) throw new Error("Icon hero bị trùng.");
-      const icon = icons[0];
-      if (icon) {
-        if (icon.tagName !== "I" || !icon.classList.contains("bi") || icon.classList.length !== 2 || icon.textContent?.trim()) throw new Error("Icon hero phải dùng thẻ i với class bi và bi-[tên icon].");
-        const name = Array.from(icon.classList).find((token) => token.startsWith("bi-"))?.slice(3);
-        if (!name) throw new Error("Icon hero thiếu tên Bootstrap Icon.");
-        validateStyleDeclarations(icon);
-        const properties = Array.from(icon.style);
-        if (properties.some((property) => property !== "font-size" && property !== "color")) throw new Error("Icon hero chỉ hỗ trợ font-size và color.");
-        const size = icon.style.fontSize.trim();
-        if (size && !/^\d+(?:\.\d+)?px$/.test(size)) throw new Error("font-size của icon phải dùng px.");
-        result.content.icon = { name, fontSize: size ? Number.parseFloat(size) : undefined, color: icon.style.color.trim() || undefined };
-      }
       const image = ownElements(root, ".hero-art img")[0];
       if (image) {
         const presentation = readPresentation(image);
