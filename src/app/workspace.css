@@ -1628,7 +1628,11 @@
 .html-editor-title { display: flex; align-items: center; gap: 10px; }
 .html-editor-title > span { color: #718097; font-size: 12px; }
 .html-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.html-editor-help { padding: 12px 24px; font-size: 12px; line-height: 1.6; }
+.html-editor-help { font-size: 12px; line-height: 1.6; border-bottom: 1px solid #dce3ee; }
+.html-editor-help summary { padding: 9px 24px; cursor: pointer; color: #145bb0; font-weight: 600; }
+.html-editor-help-content { max-height: 30vh; overflow: auto; padding: 0 24px 10px; }
+.html-editor-help-content ol { margin: 0; padding-left: 20px; }
+.html-editor-help-content li + li { margin-top: 4px; }
 .html-editor-help code { padding: 2px 4px; border-radius: 4px; background: #e5eaf3; }
 .html-editor-panes { display: grid; grid-template-columns: 210px minmax(0, 1fr) minmax(0, 1.1fr); flex: 1; min-height: 0; margin: 0 16px; gap: 12px; }
 .html-editor-code-pane, .html-editor-preview-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border: 1px solid #dce3ee; border-radius: 8px; overflow: hidden; background: #fff; }
@@ -1682,13 +1686,15 @@
 @media (max-width: 900px) {
   .html-editor-header { align-items: flex-start; flex-direction: column; padding: 12px 16px; gap: 10px; }
   .html-editor-title > span { display: none; }
-  .html-editor-help { padding: 8px 16px; }
+  .html-editor-help summary { padding: 8px 16px; }
+  .html-editor-help-content { padding: 0 16px 8px; }
 }
 @media (max-width: 760px) {
   .html-editor-panes { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); margin: 0 8px; gap: 8px; }
   .html-editor-block-list { max-height: 72px; }
   .html-editor-list-heading { display: none; }
-  .html-editor-help { display: none; }
+  .html-editor-help summary { padding: 5px 12px; }
+  .html-editor-help-content { max-height: 25vh; }
   .html-editor-code-note, .html-editor-preview-caption { font-size: 10px; padding: 6px 10px; }
   .html-editor-header { padding: 8px 12px; gap: 7px; }
   .html-editor-actions .outline-button, .html-editor-actions .primary-button { padding: 7px 9px; font-size: 10px; }

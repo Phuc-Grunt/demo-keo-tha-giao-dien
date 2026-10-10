@@ -74,7 +74,16 @@ const HtmlEditor = ({ initialSession, initialBlockId, onApply, onClose }: HtmlEd
         <button className="outline-button" onClick={onClose}><X size={15} /> Đóng</button>
       </div>
     </header>
-    <div className="html-editor-help">Xuất HTML block chỉ lưu các block và style riêng. Trang hiển thị các block cần nạp Bootstrap Icons để hiện icon. Sau khi sửa tệp, nhập lại vào bố cục này rồi nhấn Áp dụng. Dùng Xuất JSON để sao lưu đầy đủ hoặc chuyển bố cục sang nơi khác.</div>
+    <details className="html-editor-help">
+      <summary>Hướng dẫn chỉnh HTML / CSS và nhập tệp</summary>
+      <div className="html-editor-help-content">
+        <ol>
+          <li>Chọn block. Sửa chữ ở tab HTML và giữ các thẻ, mã <code>data-node</code> hiện có; ở tab CSS, chọn vùng trong <strong>Selector có thể chỉnh</strong> rồi viết style riêng.</li>
+          <li>Nếu sửa tệp bên ngoài, nhấn <strong>Xuất HTML block</strong>. Giữ các marker như <code>data-id</code>, <code>data-block</code>, <code>data-part</code>, <code>data-field</code>, <code>data-item</code>. Đặt CSS trực tiếp bằng <code>style="..."</code> trên thẻ có marker; không thêm thẻ <code>&lt;style&gt;</code> vào tệp.</li>
+          <li>Nhấn <strong>Nhập HTML</strong> vào đúng bố cục đã xuất, xem trước và kiểm tra thông báo hợp lệ. Nhấn <strong>Áp dụng vào builder</strong> để cập nhật bố cục. Dùng <strong>Xuất JSON</strong> khi cần sao lưu đầy đủ hoặc chuyển bố cục sang nơi khác.</li>
+        </ol>
+      </div>
+    </details>
     <div className="html-editor-panes">
       <BlockList entries={session.entries} sources={sources} initialSources={session.sources} selectedId={selectedId} onSelect={setSelectedId} />
       <BlockCodePane title={selected?.label ?? ""} source={selectedId ? sources[selectedId] : undefined} tab={tab} selectors={selectedId ? blockEditorSelectors(session, selectedId) : []} onTabChange={setTab} onChange={updateSource} />

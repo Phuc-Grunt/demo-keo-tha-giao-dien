@@ -1,5 +1,7 @@
 # JSON chuẩn và trình biên tập HTML
 
+Nếu mới sử dụng, hãy đọc [hướng dẫn chỉnh HTML và CSS của block](huong-dan-html-block.md) trước. Tài liệu này mô tả định dạng và luồng chuyển đổi chi tiết.
+
 ## Biên tập theo component
 
 HTML Editor có danh sách component, hai tab **HTML / CSS** của block đang chọn và **preview toàn bộ vùng block**. Có thể chọn block trong danh sách hoặc nhấp trực tiếp vào preview; block được chọn có viền xanh. Bản sửa của các block được giữ khi chuyển lựa chọn và chỉ cập nhật store khi nhấn **Áp dụng vào builder**.
