@@ -268,7 +268,7 @@ const BuilderApp = ({ templateMode = false }: BuilderAppProps) => {
     link.click();
     URL.revokeObjectURL(url);
     setMessage("Đã tải xuống bố cục JSON.");
-  }
+  }  
 
   /** JSON được chuyển sang v2; HTML được mở trong editor để kiểm tra trước khi áp dụng. */
   async function importJson(event: ChangeEvent<HTMLInputElement>) {
