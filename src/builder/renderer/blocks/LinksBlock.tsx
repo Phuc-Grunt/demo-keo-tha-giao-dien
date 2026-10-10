@@ -1,7 +1,7 @@
-import { FileText, MoveUpRight } from "lucide-react";
 import type { BlockViewProps } from "./types";
 import { fallbackItems, gridColumnsStyle, safeHref } from "./types";
 import SectionHeading from "./SectionHeading";
+import BlockIcon from "./BlockIcon";
 
 /** Hiển thị các liên kết hữu ích của khối. */
 const LinksBlock = ({ block, entries }: BlockViewProps) => {
@@ -23,14 +23,14 @@ const LinksBlock = ({ block, entries }: BlockViewProps) => {
     >
       <SectionHeading block={block} />
       <div className="links-grid" style={gridColumnsStyle(block)}>
-        {links.map((link) => {
+        {links.map((link, index) => {
           const content = (
             <>
               <span className="link-icon">
-                <FileText size={19} />
+                <BlockIcon block={block} iconKey={`item-${index}-file`} defaultName="file-earmark-text" />
               </span>
               <strong>{link.title}</strong>
-              <MoveUpRight size={16} />
+              <BlockIcon block={block} iconKey={`item-${index}-arrow`} defaultName="arrow-up-right" />
             </>
           );
           return link.href ? (

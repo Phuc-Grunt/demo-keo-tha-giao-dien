@@ -1,0 +1,274 @@
+<!-- BLOCK 1. hero — Kết nối tri thức, kiến tạo tương lai -->
+
+<div class="block-wrap" data-id="demo-hero" data-block="hero">
+  <section
+    id="demo-hero"
+    class="render-block hero-block accent-blue"
+    data-part="root"
+  >
+    <div class="hero-copy" data-part="copy">
+      <span class="hero-eyebrow" data-field="eyebrow"
+        ><span class="hero-dot"></span>CỔNG THÔNG TIN ĐIỆN TỬ</span
+      >
+      <h1 data-field="title">Kết nối tri thức, kiến tạo tương lai</h1>
+      <p data-field="description">
+        Cập nhật thông tin, chính sách và hoạt động giáo dục một cách nhanh
+        chóng, minh bạch.
+      </p>
+      <span class="hero-cta"
+        >Khám phá ngay
+        <i class="bi bi-arrow-right" aria-hidden="true" data-icon="cta"> </i>
+      </span>
+    </div>
+    <div class="hero-art" data-part="image">
+      <div class="hero-orbit orbit-one"></div>
+      <div class="hero-orbit orbit-two"></div>
+      <div class="hero-illustration">
+        <i class="bi bi-mortarboard" aria-hidden="true" data-icon="hero"></i>
+      </div>
+      <div class="hero-art-label">GIÁO DỤC<br />&amp; ĐÀO TẠO</div>
+    </div>
+  </section>
+</div>
+
+<!-- HẾT BLOCK 1 -->
+
+<!-- BLOCK 2. news — Tin tức và sự kiện -->
+
+<div class="block-wrap" data-id="demo-news" data-block="news">
+  <section
+    id="demo-news"
+    class="render-block content-section news-section accent-blue"
+    data-part="root"
+  >
+    <div class="section-heading" data-part="heading" >
+      <div>
+        <span class="eyebrow" data-field="eyebrow">TIN MỚI NHẤT</span>
+        <h2 data-field="title">Tin tức và sự kiện</h2>
+        <p data-field="description">
+          Những thông tin nổi bật từ ngành giáo dục.
+        </p>
+      </div>
+      <span class="view-all"
+        >Xem tất cả
+        <i class="bi bi-arrow-right" aria-hidden="true" data-icon="view-all">
+        </i>
+      </span>
+    </div>
+    <div
+      class="news-grid"
+      style="
+        --block-columns: 3;
+        grid-template-columns: repeat(3, minmax(0px, 1fr));
+      "
+      data-part="items"
+    >
+      <article class="news-card" data-part="item">
+        <div class="news-image news-image-1" data-part="image">
+          <div class="news-image-pattern"></div>
+          <i class="bi bi-book" aria-hidden="true" data-icon="image-0"></i>
+        </div>
+        <div class="news-card-body">
+          <span class="card-category">HOẠT ĐỘNG GIÁO DỤC</span>
+          <h3 data-item="demo-news-item-1" data-item-field="title">
+            IECEE 2026: Kiến tạo giải pháp cho những yêu cầu mới của giáo dục và
+            nguồn nhân lực
+          </h3>
+          <span class="card-meta">Tin tức <span>·</span> Dữ liệu mẫu</span>
+        </div>
+      </article>
+      <article class="news-card" data-part="item">
+        <div class="news-image news-image-2" data-part="image">
+          <div class="news-image-pattern"></div>
+          <i class="bi bi-book" aria-hidden="true" data-icon="image-1"></i>
+        </div>
+        <div class="news-card-body">
+          <span class="card-category">HOẠT ĐỘNG GIÁO DỤC</span>
+          <h3 data-item="demo-news-item-2" data-item-field="title">
+            Hướng dẫn thực hiện chính sách học bổng theo Nghị định số
+            179/2026/NĐ-CP
+          </h3>
+          <span class="card-meta">Tin tức <span>·</span> Dữ liệu mẫu</span>
+        </div>
+      </article>
+      <article class="news-card" data-part="item">
+        <div class="news-image news-image-3" data-part="image">
+          <div class="news-image-pattern"></div>
+          <i class="bi bi-book" aria-hidden="true" data-icon="image-2"></i>
+        </div>
+        <div class="news-card-body">
+          <span class="card-category">HOẠT ĐỘNG GIÁO DỤC</span>
+          <h3 data-item="demo-news-item-3" data-item-field="title">
+            Lấy ý kiến về quy định Hội giảng nhà giáo giáo dục nghề nghiệp
+          </h3>
+          <span class="card-meta">Tin tức <span>·</span> Dữ liệu mẫu</span>
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
+
+<!-- HẾT BLOCK 2 -->
+
+<!-- BLOCK 3. stats — Giáo dục qua những con số -->
+
+<div
+  class="block-wrap has-accent-color has-custom-font"
+  style="--block-accent: #366edd; --theme-font: &quot;Lora&quot;, serif"
+  data-id="demo-stats"
+  data-block="stats"
+  style="background-color: #f3f4f6; padding: 32px;"
+>
+  <section
+    id="demo-stats"
+    class="render-block stats-section accent-green"
+    data-part="root"
+  >
+    <div class="section-heading" data-part="heading">
+      <div>
+        <span
+          class="eyebrow"
+          style="color: rgb(199, 35, 35)"
+          data-field="eyebrow"
+          >TỔNG QUAN</span
+        >
+        <h2 data-field="title">Giáo dục qua những con số</h2>
+        <p data-field="description">Một vài chỉ số minh họa cho bố cục demo.</p>
+      </div>
+    </div>
+    <div
+      class="stats-grid"
+      style="
+        --block-columns: 3;
+        grid-template-columns: repeat(3, minmax(0px, 1fr));
+      "
+      data-part="items"
+    >
+      <div class="stat-card" data-part="item">
+        <strong data-item="demo-stats-item-1" data-item-field="value"
+          >63</strong
+        >
+        <span data-item="demo-stats-item-1" data-item-field="label"
+          >Tỉnh, thành phố</span
+        >
+      </div>
+      <div class="stat-card" data-part="item">
+        <strong data-item="demo-stats-item-2" data-item-field="value"
+          >24K+</strong
+        >
+        <span data-item="demo-stats-item-2" data-item-field="label"
+          >Cơ sở giáo dục</span
+        >
+      </div>
+      <div class="stat-card" data-part="item">
+        <strong data-item="demo-stats-item-3" data-item-field="value"
+          >1.8M+</strong
+        >
+        <span data-item="demo-stats-item-3" data-item-field="label"
+          >Nhà giáo</span
+        >
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- HẾT BLOCK 3 -->
+
+<!-- BLOCK 4. links — Dịch vụ và tiện ích -->
+
+<div class="block-wrap" data-id="demo-links" data-block="links">
+  <section
+    id="demo-links"
+    class="render-block content-section links-section accent-blue"
+    data-part="root"
+  >
+    <div class="section-heading" data-part="heading">
+      <div>
+        <span class="eyebrow" data-field="eyebrow">TRUY CẬP NHANH</span>
+        <h2 data-field="title">Dịch vụ và tiện ích</h2>
+        <p data-field="description">
+          Truy cập nhanh các chuyên mục thường dùng.
+        </p>
+      </div>
+    </div>
+    <div
+      class="links-grid"
+      style="
+        --block-columns: 4;
+        grid-template-columns: repeat(4, minmax(0px, 1fr));
+      "
+      data-part="items"
+    >
+      <div class="link-card" data-part="item">
+        <span class="link-icon">
+          <i
+            class="bi bi-file-earmark-text"
+            aria-hidden="true"
+            data-icon="item-0-file"
+          ></i>
+        </span>
+        <strong data-item="demo-links-item-1" data-item-field="title"
+          >Văn bản chỉ đạo</strong
+        >
+        <i
+          class="bi bi-arrow-up-right"
+          aria-hidden="true"
+          data-icon="item-0-arrow"
+        ></i>
+      </div>
+      <div class="link-card" data-part="item">
+        <span class="link-icon">
+          <i
+            class="bi bi-file-earmark-text"
+            aria-hidden="true"
+            data-icon="item-1-file"
+          ></i>
+        </span>
+        <strong data-item="demo-links-item-2" data-item-field="title"
+          >Thủ tục hành chính</strong
+        >
+        <i
+          class="bi bi-arrow-up-right"
+          aria-hidden="true"
+          data-icon="item-1-arrow"
+        ></i>
+      </div>
+      <div class="link-card" data-part="item">
+        <span class="link-icon">
+          <i
+            class="bi bi-file-earmark-text"
+            aria-hidden="true"
+            data-icon="item-2-file"
+          ></i>
+        </span>
+        <strong data-item="demo-links-item-3" data-item-field="title"
+          >Hỏi đáp</strong
+        >
+        <i
+          class="bi bi-arrow-up-right"
+          aria-hidden="true"
+          data-icon="item-2-arrow"
+        ></i>
+      </div>
+      <div class="link-card" data-part="item">
+        <span class="link-icon">
+          <i
+            class="bi bi-file-earmark-text"
+            aria-hidden="true"
+            data-icon="item-3-file"
+          ></i>
+        </span>
+        <strong data-item="demo-links-item-4" data-item-field="title"
+          >Dữ liệu mở</strong
+        >
+        <i
+          class="bi bi-arrow-up-right"
+          aria-hidden="true"
+          data-icon="item-3-arrow"
+        ></i>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- HẾT BLOCK 4 -->
